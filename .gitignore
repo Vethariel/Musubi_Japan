@@ -1,0 +1,61 @@
+# Sistema
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Secretos y entornos locales
+.env
+.env.*
+!.env.example
+
+# Editores
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Java / Kotlin / Gradle
+target/
+*.class
+.gradle/
+
+# .NET
+bin/
+obj/
+
+# Enunciado del laboratorio: se queda en local
+/Laboratorio 3 (1).pdf
+
+# Fuentes LaTeX: se quedan en local
+/latex/
+
+# PDFs. El ?nico que entra al repositorio es el informe compilado.
+*.pdf
+!/docs/informe.pdf
+
+# Restos de compilaci?n si aparecen fuera de latex/
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+*.lof
+*.lot
