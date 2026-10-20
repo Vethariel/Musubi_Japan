@@ -32,6 +32,8 @@ yarn-error.log*
 target/
 *.class
 .gradle/
+.kotlin/
+build/
 
 # .NET
 bin/
@@ -46,6 +48,7 @@ obj/
 # PDFs. El ?nico que entra al repositorio es el informe compilado.
 *.pdf
 !/docs/informe.pdf
+!/docs/Lab_Patrones_GrupoXX.pdf
 
 # Restos de compilaci?n si aparecen fuera de latex/
 *.aux

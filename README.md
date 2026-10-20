@@ -19,3 +19,25 @@ La mascota es otra capa. Propone ejercicios nuevos e información de uso correct
 ## Licencia
 
 MIT. El texto está en [LICENSE](LICENSE).
+
+## Código del componente Práctica
+
+El componente que corre en el celular está en [practica](practica), escrito en Kotlin. Los paquetes `vista`, `viewmodel` y `modelo` siguen el MVVM. El almacén, el registro de avance y el proveedor de la mascota están en memoria, dentro de `infraestructura`.
+
+Java ya está en la máquina. Falta instalar Gradle para generar el wrapper y bajar Kotlin; eso queda pendiente de una mejor conexión. Cuando esté, las pruebas se corren así:
+
+```bash
+cd practica
+./gradlew test
+```
+
+| Patrón | Archivo | Clases |
+| --- | --- | --- |
+| Factory Method | `viewmodel/FabricaDeEjercicio.kt` | `FabricaDeEjercicio`, `FabricaDeDistractores` |
+| Prototype | `modelo/Frase.kt` | `Frase` |
+| Composite | `modelo/Seleccion.kt` | `Seleccion`, `Grupo`, `Pieza` |
+| Adapter | `infraestructura/AdaptadorDelAgente.kt` | `AdaptadorDelAgente`, `IEvaluacion` |
+| Strategy | `modelo/PoliticaDePuntaje.kt` | `ReglaDeEfecto`, `PoliticaDePuntaje`, `EfectoDeKanji`, `EfectoDeVocabulario`, `EfectoDeFrase`, `EfectoDeContexto` |
+| Chain of Responsibility | `modelo/FiltroDePuntaje.kt` | `FiltroDePuntaje`, `FiltroDeKanaDominado`, `FiltroDeForma`, `FiltroDeContexto` |
+
+Las rutas de la tabla cuelgan de `practica/src/main/kotlin/musubi/practica/`. Las pruebas están en `practica/src/test/kotlin/musubi/practica/PracticaTest.kt`.
