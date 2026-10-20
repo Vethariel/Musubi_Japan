@@ -24,7 +24,7 @@ MIT. El texto está en [LICENSE](LICENSE).
 
 El componente que corre en el celular está en [practica](practica), escrito en Kotlin. Los paquetes `vista`, `viewmodel` y `modelo` siguen el MVVM. El almacén, el registro de avance y el proveedor de la mascota están en memoria, dentro de `infraestructura`.
 
-Java ya está en la máquina. Falta instalar Gradle para generar el wrapper y bajar Kotlin; eso queda pendiente de una mejor conexión. Cuando esté, las pruebas se corren así:
+El proyecto trae el wrapper de Gradle 9.7.1 y compila para Java 21, aunque Gradle corra con un JDK más nuevo. Las pruebas se corren así:
 
 ```bash
 cd practica
