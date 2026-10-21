@@ -12,9 +12,9 @@ class ReglaDeEfecto(
     ): List<Decision> {
         if (sesion.ejercicio == "libre") {
             val decisiones = frase?.piezas.orEmpty().map { cadena.filtrar(it, correccion!!, avance) }
-            return politicas.getValue("libre").aplicar(sesion, frase, decisiones)
+            return politicas.getValue("libre").aplicar(sesion, frase, decisiones).distinct()
         }
-        return politicas.getValue(sesion.tipo).aplicar(sesion, frase, null)
+        return politicas.getValue(sesion.tipo).aplicar(sesion, frase, null).distinct()
     }
 
     companion object {

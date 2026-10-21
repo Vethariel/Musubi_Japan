@@ -105,7 +105,7 @@ class PracticaTest {
         assertEquals("りんご", original.piezas.first().nombre)
         assertFalse(original.incorporada)
         assertTrue(copia.incorporada)
-        assertEquals(listOf(copia), grupo.frases)
+        assertEquals(listOf(copia), grupo.frases())
     }
 
     @Test
@@ -116,6 +116,32 @@ class PracticaTest {
         val sueltas = Grupo(listOf(dia, libro))
         assertEquals(listOf(dia, libro), juntados.piezas())
         assertEquals(sueltas.piezas(), juntados.piezas())
+    }
+
+    @Test
+    fun juntarGruposTambienJuntaSusFrases() {
+        val manzana = Vocabulario("りんご")
+        val comer = Vocabulario("食べる")
+        val comida = Grupo(listOf(manzana), listOf(Frase("りんごです", mutableListOf(manzana))))
+        val verbos = Grupo(listOf(comer), listOf(Frase("食べます", mutableListOf(comer))))
+        val juntados = Grupo(listOf(comida, verbos, manzana))
+        assertEquals(listOf("りんごです", "食べます"), juntados.frases().map { it.texto })
+        assertEquals(emptyList(), manzana.frases())
+    }
+
+    @Test
+    fun unaPiezaRepetidaCuentaUnaSolaVezPorSesion() {
+        val kanji = Kanji("食")
+        val palabra = Vocabulario("食べる", listOf(kanji))
+        val comida = Grupo(listOf(kanji, palabra))
+        val verbos = Grupo(listOf(palabra))
+        val juntados = Grupo(listOf(comida, verbos))
+        assertEquals(listOf(kanji, palabra), juntados.piezas())
+        val sesion = sesion()
+        sesion.abrirSeleccion(juntados, "vocabulario", "interiorizar", FabricaDeEscrituraAMano("たべる", "たべる"))
+        sesion.registrarPuntaje()
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(palabra))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(kanji))
     }
 
     @Test

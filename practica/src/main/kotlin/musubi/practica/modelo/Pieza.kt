@@ -6,6 +6,8 @@ sealed class Pieza(
 ) : Seleccion {
     override fun piezas(): List<Pieza> = listOf(this)
 
+    override fun frases(): List<Frase> = emptyList()
+
     override fun equals(other: Any?): Boolean = other is Pieza && other.id == id
 
     override fun hashCode(): Int = id.hashCode()

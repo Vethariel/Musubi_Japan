@@ -3,12 +3,15 @@ package musubi.practica.modelo
 class Frase(
     var texto: String,
     val piezas: MutableList<Pieza>,
-    var incorporada: Boolean = false,
+    incorporada: Boolean = false,
 ) {
+    var incorporada: Boolean = incorporada
+        private set
+
     fun clonar(): Frase = Frase(texto, piezas.toMutableList())
 
     fun incorporarGrupo(grupo: Grupo) {
-        grupo.frases.add(this)
+        grupo.agregarFrase(this)
         incorporada = true
     }
 }
