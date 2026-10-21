@@ -45,7 +45,7 @@ obj/
 # PDFs. El ?nico que entra al repositorio es el informe compilado.
 *.pdf
 !/docs/informe.pdf
-!/docs/Lab_Patrones_GrupoXX.pdf
+!/docs/Lab_Patrones_Grupo00.pdf
 
 # Restos de compilaci?n si aparecen fuera de latex/
 *.aux
