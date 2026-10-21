@@ -1,0 +1,604 @@
+\documentclass[11pt]{article}
+
+\usepackage{fontspec}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc,shapes.multipart}
+
+\setmainfont{Latin Modern Roman}
+\newfontfamily\cjk{Droid Sans Japanese}
+\newcommand{\jp}[1]{{\cjk #1}}
+
+\hypersetup{
+  pdftitle={Musubi Japan. Informe de laboratorio},
+  pdfauthor={Daniel Gracia},
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue
+}
+
+\title{Musubi Japan\\[0.35em]
+\large Laboratorio: arquitectura, subarquitectura, SOLID y patrones\\[0.25em]
+\normalsize Ingeniería de Software II (2016702)}
+\author{Daniel Gracia}
+\date{Octubre de 2026\\[0.35em]
+\normalsize\texttt{Lab\_Patrones\_GrupoXX.pdf}}
+
+\begin{document}
+\maketitle
+\vspace{-1.6em}
+
+\section{Fase 1. Dominio y problema}
+
+\subsection{Sector profesional}
+
+El sector es la educación de un segundo idioma. Dentro de él, el japonés se distingue del español porque la escritura, el léxico y la gramática no se recorren con un solo alfabeto. El hiragana y el katakana son silabarios: permiten leer una frase en voz alta sin conocer el significado de las palabras. El kanji y el vocabulario cargan ese significado, y para leer y escribir un texto común hace falta conocer más de 2000 caracteres. La gramática, además, sigue una lógica distinta de la de las lenguas romances, y eso pesa cuando quien estudia tiene el español como primera lengua. Esas partes se enseñan y se practican a menudo por separado, aunque en un texto aparecen juntas. El avance no se mide solo con palabras aisladas: reconocer una pieza es distinto de usarla bien en un contexto.
+
+\subsection{Actores}
+
+\begin{itemize}
+  \raggedright
+  \item \textbf{Aprendiz de japonés.} Quien estudia el idioma en el celular, sea novato o ya tenga conocimientos previos, y busca una herramienta de reforzamiento.
+  \item \textbf{Proveedor de IA.} Sistema externo de la capa de acompañamiento. Sostiene a la mascota cuando hay red y el aprendiz tiene acceso a esa capa.
+  \item \textbf{Red de anuncios y pasarela de pago.} Sistemas externos que financian la capa de IA, por anuncios o por una opción de pago. El estudio sin mascota no los usa.
+\end{itemize}
+
+\subsection{Problema}
+
+El refuerzo del japonés está repartido en varias aplicaciones. Unas trabajan el kanji, otras el vocabulario y la gramática, otras los textos y las lecturas. Las que reúnen varios de esos componentes tienen un costo alto. Quien estudia salta de una herramienta a otra, y el kanji, la palabra, la gramática y el escrito quedan sueltos.
+
+Musubi Japan reúne esos contenidos en un solo lugar y los entrega con la aplicación. El recorrido lo decide el aprendiz: sigue el camino establecido por la aplicación o incorpora, poco a poco, las frases de lo que va aprendiendo, en el orden que le sirve. Cada frase entra como material y la aplicación la desglosa en vocabulario, reglas gramaticales y kanji. Cada pieza guarda dos grados de avance: el reconocimiento, cuando la persona la identifica, y la interiorización, cuando ya la usa bien.
+
+El ejercicio mueve solo las piezas que pone en juego. Dibujar el kanji de \jp{食べる} (\jp{食}, en \jp{たべる}, con el sentido general de comida) actualiza ese kanji. Producir \jp{りんごを食べます} (como una manzana) actualiza las palabras \jp{りんご} (manzana) y \jp{食べる} (comer), la partícula \jp{を} (la acción recae sobre el objeto directo), el verbo en presente (\jp{食べます}, forma cordial) y el kanji de \jp{食べる}.
+
+El estudio cabe entero en el teléfono, sin red y sin mascota. En modo offline la interiorización es autoevaluativa y no hay anuncios. La mascota vive en otra capa. Cuando está disponible, acompaña el aprendizaje con contexto de uso cotidiano: cuándo conviene una frase y cuándo otra, o cuando conviene usar una palabra en un contexto diferente.
+
+\subsection{Requisitos funcionales}
+
+\begin{enumerate}
+  \renewcommand{\labelenumi}{RF\arabic{enumi}.}
+  \setlength{\itemsep}{0.35em}
+  \raggedright
+  \item Como aprendiz novato, quiero seguir una ruta de aprendizaje sugerida para adentrarme en el aprendizaje del japonés.
+  \item Como aprendiz, quiero incorporar en mi orden las frases que voy aprendiendo para no olvidarlas y poder usarlas más adelante.
+  \item Como aprendiz, quiero que en cada pieza (vocabulario, kanji o gramática) se registre qué tanto la identifico y qué tanto soy capaz de usarla, para ver cómo voy con cada una.
+  \item Como aprendiz, quiero practicar una pieza aislada (vocabulario, kanji o gramática) para entender su significado y en qué otras frases puede usarse.
+  \item Como aprendiz, quiero que, al practicar una frase, el progreso de sus piezas (vocabulario, kanji y gramática) avance para dedicar menos tiempo a cada una.
+  \item Como aprendiz, quiero ver el progreso de mi avance general para saber qué tanto he avanzado en mi aprendizaje.
+  \item Como aprendiz, quiero acceder a lecturas en japonés para practicar lo que he aprendido y fortalecer mi aprendizaje del idioma.
+  \item Como aprendiz, quiero usar la aplicación sin conexión para no depender de los anuncios ni del uso obligatorio de la mascota.
+  \item Como aprendiz, quiero que la mascota me dé ejercicios nuevos e información de uso correcto para fortalecer mi uso del japonés.
+  \item Como sistema, quiero ofrecer la mascota mediante anuncios o pago para sostener su servicio.
+\end{enumerate}
+
+\subsection{Atributos de calidad}
+
+\begin{description}
+  \raggedright
+  \item[Disponibilidad.] El aprendiz solicita la ruta, la práctica, las lecturas o el avance sin conexión; el sistema los entrega en el dispositivo en el 100\,\% de las solicitudes.
+  \item[Rendimiento.] El aprendiz termina de practicar una frase; el sistema muestra el progreso de sus piezas y el avance general en menos de un segundo.
+  \item[Mantenibilidad.] Los componentes de la aplicación permanecen desacoplados; cada componente y cada conexión entre ellos se prueba sin ejecutar el resto del sistema.
+  \item[Seguridad.] Si el aprendiz estudia sin conexión, el sistema conserva sus frases y su avance solo en el teléfono. Si usa la mascota, el sistema envía al proveedor únicamente la solicitud, sin información personal.
+\end{description}
+
+\section{Fase 2. Arquitectura macro}
+
+Musubi Japan usa un monolito modular en el teléfono y un solo servicio para la mascota, desplegado en un servidor. La práctica, las lecturas, el detalle, el avance y el almacén local viven en la aplicación, junto con los grupos de frases. La ruta sugerida es el grupo que ofrece el sistema, ordenado por temas. El aprendiz puede seguirlo, crear sus propios grupos con las frases que considera relacionadas, o pasar de uno al otro. Al guardar una frase, una función del grupo la desglosa en hiragana, katakana, kanji, vocabulario y gramática, y asocia las piezas de ese grupo. Si una pieza ya trae avance de otro grupo, ese progreso sirve para enfocarse en lo que falta. El avance muestra el progreso general, luego cada tipo de pieza y, dentro, cómo va cada una. Desde una lectura o desde el avance, un elemento abre el detalle de su pieza: ahí se entiende y, si el aprendiz quiere, se incorpora a un grupo. El módulo de la mascota queda aparte del estudio. Con la respuesta del proveedor incorpora frases nuevas en un grupo, propone sesiones en la práctica y genera lecturas. Con red abre los anuncios o el pago y envía solo la solicitud al servicio de la mascota, que la reenvía al proveedor de IA. Ese servicio no guarda datos del aprendiz. El almacén local, cuando hay red, deja una copia de seguridad en el Google Drive del aprendiz. No hay gateway ni broker.
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\footnotesize,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, minimum height=8mm, minimum width=27mm},
+  ext/.style={draw, dashed, align=center, inner sep=4pt, minimum height=8mm, minimum width=22mm},
+  >={Stealth}
+]
+  \node[box] (ruta) {Grupos};
+  \node[box, right=26mm of ruta] (almacen) {Almacén local};
+  \node[box, right=16mm of almacen] (avance) {Avance};
+  \node[box, right=6mm of avance] (practica) {Práctica};
+  \node[box, below=14mm of almacen] (lecturas) {Lecturas};
+  \node[box, below=14mm of avance] (detalle) {Detalle};
+  \node[box, below=10mm of lecturas] (mascota) {Módulo mascota};
+
+  \begin{scope}[on background layer]
+    \node[draw, rounded corners=3pt, inner sep=8pt, fit=(ruta)(almacen)(practica)(lecturas)(detalle)(mascota)] (tel) {};
+  \end{scope}
+  \node[font=\footnotesize\itshape, anchor=south west] at ([yshift=1mm]tel.north west) {Teléfono};
+  \node[ext, anchor=south] (drive) at ([yshift=12mm]tel.north -| almacen.north) {Google Drive};
+  \draw[->] (almacen.north) -- node[left, font=\scriptsize, inner sep=1pt] {copia} (drive.south);
+
+  \coordinate (cruce) at ([yshift=-14mm]mascota.south);
+  \node[ext, anchor=east] (anuncios) at ([xshift=-8mm]cruce) {Anuncios};
+  \node[ext, anchor=west] (pago) at ([xshift=8mm]cruce) {Pago};
+  \node[box, anchor=north, minimum width=42mm] (servicio) at ([yshift=-16mm]cruce) {Servicio de la mascota};
+  \begin{scope}[on background layer]
+    \node[draw, rounded corners=3pt, inner sep=6pt, fit=(servicio)] (srv) {};
+  \end{scope}
+  \node[font=\footnotesize\itshape, anchor=south west] at ([yshift=1mm]srv.north west) {Servidor};
+  \node[ext, below=8mm of servicio] (proveedor) {Proveedor de IA};
+
+  \draw[->] (ruta) -- node[midway, above, font=\scriptsize, inner sep=1pt] {frases y piezas} (almacen);
+  \draw[->] (practica) -- (avance);
+  \draw[->] (avance) -- (almacen);
+  \draw[->] (lecturas) -- (almacen);
+  \draw[->] (lecturas) -- node[above, font=\scriptsize, inner sep=1pt] {pieza} (detalle);
+  \draw[->] (avance.south) -- node[right, font=\scriptsize, inner sep=1pt] {pieza} (detalle.north);
+  \draw[->] ([xshift=-7mm]detalle.north) -- ++(0,4mm) -| node[pos=0.25, above, font=\scriptsize, inner sep=1pt] {incorporar} (ruta.south east);
+  \draw[->] (mascota.north) -- node[right, font=\scriptsize, inner sep=1pt] {lecturas nuevas} (lecturas.south);
+  \draw[->] (mascota.west) -- node[above, font=\scriptsize, inner sep=1pt] {frases nuevas} (mascota.west -| ruta.south) -- (ruta.south);
+  \draw[->] (mascota.east) -- node[above, font=\scriptsize, inner sep=1pt] {sesiones} (mascota.east -| practica.south) -- (practica.south);
+  \draw (mascota.south) -- (cruce);
+  \draw[->] (cruce) -- (anuncios.east);
+  \draw[->] (cruce) -- (pago.west);
+  \draw[->] (cruce) -- node[right, font=\scriptsize, inner sep=1pt] {solicitud} (servicio.north);
+  \draw[->] (servicio) -- (proveedor);
+\end{tikzpicture}\\[0.6em]
+{\small Figura 1. Arquitectura macro de Musubi Japan. Trazo continuo: componentes de Musubi Japan. Trazo punteado: sistemas externos.}
+\end{center}
+
+\subsection{Justificación frente a microservicios}
+
+Partir la ruta, la práctica, las lecturas y el avance en microservicios no cumple los escenarios de la fase 1.
+
+\begin{description}
+  \raggedright
+  \item[Disponibilidad.] Esas funciones responden sin red en el 100\,\% de las solicitudes. En servicios separados dejan de estar en el teléfono.
+  \item[Rendimiento.] El progreso de una frase se muestra en menos de un segundo, sin esperar a la red. Un servicio remoto no cumple esa medida.
+  \item[Seguridad.] Sin conexión, las frases y el avance se quedan en el teléfono. La única copia que sale, cuando hay red, es la del Google Drive del aprendiz. El servidor de la mascota no la guarda.
+  \item[Mantenibilidad.] Cada componente y cada conexión se prueban sin ejecutar el resto del sistema. Esa separación es entre módulos de la misma aplicación.
+\end{description}
+
+El servicio de la mascota sí se despliega aparte, en un servidor: la clave del proveedor no va en la aplicación, y los anuncios o el pago sostienen ese servicio. Sigue siendo un solo servicio.
+
+\section{Fase 3. Componente y subarquitectura}
+
+\subsection{Componente elegido}
+
+Práctica es el componente que se diseña porque ahí el aprendiz repasa lo que ya vio y, cuando hay conexión, construye con más libertad. Los grupos, por su parte, se limitan a ordenar frases y a desglosarlas; Avance guarda los puntajes y los muestra, mientras que Lecturas y Detalle enseñan la pieza. La mascota tampoco reemplaza esa regla, pues solo llama la herramienta de Práctica y ofrece la sesión.
+
+Repasar un kanji o un vocabulario es un ejercicio acotado: el aprendiz lo reconoce, lo identifica y lo escribe, a mano o con el teclado, y por eso ese repaso mueve solo esa pieza. Repasar gramática, en cambio, consiste en construir frases. Sin conexión, esa evaluación es autoevaluativa: el aprendiz juzga si la frase le quedó bien. Con conexión, el agente puede evaluar construcciones que el aprendiz no había hecho.
+
+El modo libre extiende esa construcción. En él, el aprendiz arma frases o párrafos. Sin conexión, la evaluación también es autoevaluativa; con conexión, el agente los evalúa y los corrige. Así dispone de herramientas para poblar sus grupos con más frases, si así lo desea. La interiorización, entonces, queda solo en las piezas que usó bien en ese contexto, mientras que las demás reciben reconocimiento cuando la forma es correcta, pero no encaja en el contexto pedido. Además, un hiragana o un katakana ya interiorizado no vuelve a ese foco, de modo que el repaso y la corrección se concentran en el kanji, el vocabulario y la gramática que todavía lo necesitan.
+
+\subsection{MVVM}
+
+MVVM reparte Práctica en tres partes, y cada una cambia por su propia razón. La vista es el conjunto de pantallas de la práctica: cada una muestra su ejercicio y recoge lo que el aprendiz hace, sin decidir si eso sube el avance. El ViewModel dirige la sesión: mira qué quiso estudiar, le dice a la pantalla qué ejercicio mostrar y, al final, anota el resultado. El modelo reúne lo que se está practicando: la sesión, la pieza, la frase y la regla que dice qué puntaje sube. No sabe cómo se ve la pantalla ni quién abrió la práctica. La pantalla le entrega la respuesta a la sesión, la sesión le pregunta a la regla qué puntajes suben y los guarda en el avance.
+
+\begin{description}
+  \raggedright
+  \item[Vista.] \texttt{PantallaDePractica} nombra ese conjunto de vistas, no una sola pantalla. Cada ejercicio tiene la suya, y todas entregan la respuesta a la misma sesión. En kanji y vocabulario, la de identificar presenta un conjunto de distractores o un conjunto de traducciones, y la de interiorizar recoge la escritura, a mano o en el celular. En gramática, una pide ubicar partículas o auxiliares, u ordenar la frase, y otra recoge la frase producida con ese patrón. La producción libre recoge el texto y, sin conexión, también el juicio del aprendiz. Ninguna calcula los puntajes.
+  \item[ViewModel.] \texttt{SesionDePractica} arma la sesión a partir del grupo, de los grupos juntados o de las piezas sueltas, y elige el ejercicio según el tipo de pieza. Lee en el almacén lo que esa selección necesita. Sin conexión, la frase de gramática y la producción libre quedan en autoevaluación. Con conexión, en la producción libre pide al agente que evalúe el texto; el contraste con el avance del aprendiz se hace en el teléfono, porque al proveedor solo sale la solicitud. Si la frase es nueva, presenta la conversación sobre cómo la conoce y si se incorpora al grupo. Luego pide el resultado al modelo y lo registra en Avance.
+  \item[Modelo.] Reúne \texttt{Sesion}, \texttt{Pieza}, \texttt{Progreso}, \texttt{Frase} y \texttt{ReglaDeEfecto}. La sesión y la frase dicen qué se está practicando, la pieza dice qué se estudia, el progreso cuánto lo domina el aprendiz y la regla decide qué sube.
+  \begin{itemize}
+    \raggedright
+    \item \texttt{Sesion.} Es la práctica en curso, distinta del ViewModel que la dirige. Guarda lo que el aprendiz eligió estudiar ---un grupo, varios grupos o piezas sueltas---, el tipo de pieza y el ejercicio que corresponde, identificar o interiorizar. No calcula el puntaje.
+    \item \texttt{Pieza.} Es una unidad de estudio y solo guarda contenido, el mismo para todos los aprendices. Tiene cuatro formas: \texttt{Kana}, hiragana o katakana; \texttt{Kanji}; \texttt{Vocabulario}, con los kanji que trae; y \texttt{Gramatica}. La gramática no es una palabra suelta sino una estructura: un patrón de partes fijas, huecos y partes opcionales, como [causa]\jp{。だから}[consecuencia], donde la causa puede quedar en la conversación. Además lleva su registro ---cordial, informal o indiferente---, de modo que \jp{だから} y \jp{ですから} son dos piezas. Cada pieza tiene un identificador estable. Una actualización de los contenidos reemplaza la pieza sin borrar el avance que el aprendiz lleva en ella.
+    \item \texttt{Progreso.} Es lo que el aprendiz lleva en una pieza: por separado, qué tanto la identifica y qué tanto es capaz de usarla. Es un dato del aprendiz, no del contenido, y no sale del teléfono. Avance lo guarda por el identificador de la pieza. No se modifica: subir un puntaje produce un progreso nuevo.
+    \item \texttt{Frase.} Es el enunciado que se construye o se produce. Reúne las piezas que pone en juego. Si es nueva, no queda conocida hasta que el aprendiz decide incorporarla a un grupo.
+    \item \texttt{ReglaDeEfecto.} Recibe la respuesta de la sesión y devuelve qué puntaje sube en cada pieza, sin guardarlo. Identificar sube lo que el aprendiz reconoce; recuperar de memoria o producir sube lo que ya es capaz de usar. Un kanji practicado mueve solo ese kanji. Un vocabulario mueve esa palabra y los kanji que trae, del mismo modo que una frase reparte el puntaje entre las piezas que usa. En la producción libre, la interiorización queda en las piezas usadas bien en ese contexto, y el reconocimiento en las que tienen la forma correcta fuera de él. Para apartar lo ya interiorizado, la regla lee el avance, pero no lo escribe.
+  \end{itemize}
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\footnotesize,
+  box/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, minimum width=46mm},
+  ext/.style={draw, dashed, align=center, inner sep=4pt, minimum height=8mm, minimum width=24mm},
+  part/.style={draw, rounded corners=1pt, align=center, inner sep=3pt, font=\scriptsize, minimum width=24mm},
+  >={Stealth},
+  node distance=14mm and 12mm
+]
+  \node[box] (vista) {Vista\\[1pt]\texttt{PantallaDePractica}};
+  \node[box, below=of vista] (vm) {ViewModel\\[1pt]\texttt{SesionDePractica}};
+  \node[ext, left=of vm] (mascota) {Mascota};
+  \node[ext, below=5mm of mascota] (almacen) {Almacén};
+  \node[ext, right=of vm] (avance) {Avance};
+
+  \node[part, below=22mm of vm] (regla) {\texttt{ReglaDeEfecto}};
+  \node[part, below=8mm of regla, xshift=-14mm] (pieza) {\texttt{Pieza}};
+  \node[part, left=4mm of pieza] (sesion) {\texttt{Sesion}};
+  \node[part, right=4mm of pieza] (frase) {\texttt{Frase}};
+  \node[part, right=4mm of frase] (progreso) {\texttt{Progreso}};
+
+  \begin{scope}[on background layer]
+    \node[draw, rounded corners=2pt, inner sep=6pt, fit=(regla)(sesion)(progreso)] (mod) {};
+  \end{scope}
+  \node[font=\scriptsize\itshape, anchor=south west] at ([yshift=1mm]mod.north west) {Modelo};
+
+  \draw[->] ([xshift=-5mm]vm.north) -- node[left, font=\scriptsize, inner sep=1pt] {ejercicio} ([xshift=-5mm]vista.south);
+  \draw[->] ([xshift=5mm]vista.south) -- node[right, font=\scriptsize, inner sep=1pt] {respuesta} ([xshift=5mm]vm.north);
+  \draw[->] (mascota) -- node[above, font=\scriptsize, inner sep=1pt] {sesión} (vm);
+  \draw[->] (vm.south west) -- node[left, font=\scriptsize, inner sep=1pt] {lee} (almacen.south east);
+  \draw[->] ([xshift=-4mm]vm.south) -- node[left, font=\scriptsize, inner sep=1pt] {pregunta} ([xshift=-4mm]mod.north);
+  \draw[->] ([xshift=4mm]mod.north) -- node[right, font=\scriptsize, inner sep=1pt] {puntaje} ([xshift=4mm]vm.south);
+  \draw[->] (sesion.north) -- (regla.south west);
+  \draw[->] (pieza.north) -- ([xshift=-3mm]regla.south);
+  \draw[->] (frase.north) -- ([xshift=3mm]regla.south);
+  \draw[->] (progreso.north) -- (regla.south east);
+  \draw[->] (vm) -- node[above, font=\scriptsize, inner sep=1pt] {registra} (avance);
+\end{tikzpicture}\\[0.6em]
+{\small Figura 2. MVVM de Práctica. Recuadro: clases del modelo. Trazo punteado: queda fuera del componente.}
+\end{center}
+
+\section{Fase 4. SOLID}
+
+El diseño de Práctica separa el flujo de la sesión, los ejercicios y la regla que reparte los puntajes. La figura 3 muestra esas clases. Cada principio nombra el diseño anterior, en el que esas razones de cambio estaban mezcladas.
+
+\begin{center}
+\begin{tikzpicture}[
+  uml/.style={
+    draw, rectangle split, rectangle split parts=3,
+    align=center, font=\tiny, inner sep=1.5pt, minimum width=30mm
+  },
+  umlint/.style={uml, dashed},
+  every two node part/.style={align=center},
+  every three node part/.style={align=center},
+  >={Stealth},
+  node distance=7mm and 4mm
+]
+  \node[uml, minimum width=36mm] (vm) {{\scriptsize SesionDePractica}
+    \nodepart{two} ejercicio
+    \nodepart{three} abrirSeleccion()\\ registrarPuntaje()};
+  \node[uml, minimum width=36mm, right=16mm of vm] (pantalla) {{\scriptsize PantallaDePractica}
+    \nodepart{two} respuesta
+    \nodepart{three} mostrarEjercicio()\\ recoger()};
+
+  \node[umlint, below left=12mm and 0mm of vm] (alm) {{\scriptsize IAlmacen}
+    \nodepart{two}
+    \nodepart{three} leerSeleccion()};
+  \node[umlint, below=12mm of vm] (avance) {{\scriptsize IRegistroAvance}
+    \nodepart{two}
+    \nodepart{three} registrarPuntaje()};
+  \node[uml, below right=12mm and 0mm of vm] (regla) {{\scriptsize ReglaDeEfecto}
+    \nodepart{two}
+    \nodepart{three} puntajeRespuesta()};
+  \node[umlint, right=8mm of regla] (consulta) {{\scriptsize IConsultaAvance}
+    \nodepart{two}
+    \nodepart{three} progreso()};
+
+  \node[uml, minimum width=24mm, below=8mm of regla] (pieza) {{\scriptsize Pieza}
+    \nodepart{two} id\\ nombre
+    \nodepart{three} piezas()};
+  \node[uml, minimum width=24mm, left=3mm of pieza] (ses) {{\scriptsize Sesion}
+    \nodepart{two} seleccion\\ tipo\\ ejercicio
+    \nodepart{three} guardarSeleccion()};
+  \node[uml, minimum width=24mm, right=3mm of pieza] (frase) {{\scriptsize Frase}
+    \nodepart{two} texto\\ piezas
+    \nodepart{three} incorporarGrupo()};
+  \node[uml, minimum width=24mm, right=3mm of frase] (progreso) {{\scriptsize Progreso}
+    \nodepart{two} identificacion\\ uso
+    \nodepart{three} subir()};
+
+  \node[umlint, below=14mm of ses] (ident) {{\scriptsize IIdentificacion}
+    \nodepart{two}
+    \nodepart{three} elegir()};
+  \node[umlint, right=4mm of ident] (recup) {{\scriptsize IRecuperacion}
+    \nodepart{two}
+    \nodepart{three} escribir()};
+  \node[umlint, right=4mm of recup] (prod) {{\scriptsize IProduccion}
+    \nodepart{two}
+    \nodepart{three} producirPatron()};
+  \node[umlint, right=4mm of prod] (eval) {{\scriptsize IEvaluacion}
+    \nodepart{two}
+    \nodepart{three} corregirTexto()};
+
+  \node[uml, below=7mm of ident] (dist) {{\scriptsize VistaDeDistractores}
+    \nodepart{two} opciones
+    \nodepart{three} elegir()};
+  \node[uml, below=4mm of dist] (trad) {{\scriptsize VistaDeTraducciones}
+    \nodepart{two} traducciones
+    \nodepart{three} elegir()};
+  \node[uml, below=7mm of recup] (mano) {{\scriptsize EscrituraAMano}
+    \nodepart{two} trazo
+    \nodepart{three} escribir()};
+  \node[uml, below=4mm of mano] (cel) {{\scriptsize EscrituraEnCelular}
+    \nodepart{two} texto
+    \nodepart{three} escribir()};
+  \node[uml, below=7mm of prod] (patron) {{\scriptsize ProduccionDePatron}
+    \nodepart{two} gramatica
+    \nodepart{three} producirPatron()};
+  \node[uml, below=7mm of eval] (libre) {{\scriptsize ProduccionLibre}
+    \nodepart{two} texto
+    \nodepart{three} producir()\\ juicio()};
+
+  \draw[->] ([yshift=1.5mm]vm.east) -- node[above, font=\scriptsize, inner sep=1pt] {ejercicio} ([yshift=1.5mm]pantalla.west);
+  \draw[->] ([yshift=-1.5mm]pantalla.west) -- node[below, font=\scriptsize, inner sep=1pt] {respuesta} ([yshift=-1.5mm]vm.east);
+  \draw[dashed, -{Stealth[open]}] (vm.south west) -- (alm.north);
+  \draw[dashed, -{Stealth[open]}] (vm.south) -- (avance.north);
+  \draw[dashed, -{Stealth[open]}] (vm.south east) -- node[pos=0.3, right, font=\scriptsize, inner sep=1pt] {puntaje} (regla.north west);
+  \draw[dashed, -{Stealth[open]}] (regla.south west) -- ++(0,-3mm) -| (ses.north);
+  \draw[dashed, -{Stealth[open]}] (regla.south) -- (pieza.north);
+  \draw[dashed, -{Stealth[open]}] (regla.south east) -- ++(0,-3mm) -| (frase.north);
+  \draw[dashed, -{Stealth[open]}] (regla.east) -- (consulta.west);
+  \draw[dashed, -{Stealth[open]}] (consulta.south) -- ++(0,-2mm) -| (progreso.north);
+  \draw[-{Triangle[open]}] ([xshift=6mm]avance.north) -- ++(0,4mm) -| (consulta.north);
+
+  \coordinate (gap) at ($(ses.south)!0.5!(ident.north)$);
+  \path let \p1=(alm.west), \p2=(ident.west), \p3=(dist.west), \p4=(ses.west)
+    in coordinate (spine) at ({min(\x1,\x2,\x3,\x4)-6mm},0);
+  \draw[dashed] (vm.west) -- (vm.west -| spine) -- (spine |- gap);
+  \draw[dashed] (spine |- gap) -- (eval.north |- gap);
+  \draw[dashed, -{Stealth[open]}] (ident.north |- gap) -- (ident.north);
+  \draw[dashed, -{Stealth[open]}] (recup.north |- gap) -- (recup.north);
+  \draw[dashed, -{Stealth[open]}] (prod.north |- gap) -- (prod.north);
+  \draw[dashed, -{Stealth[open]}] (eval.north |- gap) -- (eval.north);
+
+  \draw[dashed, -{Triangle[open]}] (dist.north) -- (ident.south);
+  \draw[dashed, -{Triangle[open]}] (trad.east) -- ++(2.5mm,0) |- (ident.east);
+  \draw[dashed, -{Triangle[open]}] (mano.north) -- (recup.south);
+  \draw[dashed, -{Triangle[open]}] (cel.east) -- ++(2.5mm,0) |- (recup.east);
+  \draw[dashed, -{Triangle[open]}] (patron.north) -- (prod.south);
+\end{tikzpicture}\\[0.4em]
+{\small Figura 3. Clases de Práctica para SOLID. Flecha punteada: dependencia. Triángulo punteado: realización. Triángulo continuo: una interfaz extiende a otra.}
+\end{center}
+
+\begin{description}
+  \raggedright
+  \item[Responsabilidad única.] \texttt{SesionDePractica} cambia si cambia el flujo: abre la selección, elige qué vista del conjunto mostrar y registra el puntaje cuando la respuesta vuelve. \texttt{ReglaDeEfecto} cambia si cambia qué puntaje sube. Para decidirlo lee \texttt{Sesion}, \texttt{Pieza} y \texttt{Frase}, y consulta el \texttt{Progreso}; por eso las flechas salen de la regla hacia esas clases. Devuelve las decisiones y no las guarda. Antes las dos razones vivían en la sesión, y agregar la producción libre obligaba a modificar también el cálculo de los puntajes. \texttt{Pieza} cambia si cambia el contenido, y \texttt{Progreso} si el aprendiz practica. Antes los dos vivían en la pieza, y actualizar un contenido ponía en riesgo el avance.
+  \item[Abierto/cerrado.] \texttt{SesionDePractica} depende de \texttt{IIdentificacion}, \texttt{IRecuperacion}, \texttt{IProduccion} e \texttt{IEvaluacion}. Esa dependencia es la línea punteada que baja desde la sesión hasta cada interfaz. Cada ejercicio es una clase que realiza una de ellas, y uno nuevo entra sin modificar la sesión. Antes un condicional dentro de la sesión elegía el ejercicio.
+  \item[Sustitución de Liskov.] El triángulo punteado indica realización. \texttt{VistaDeDistractores} y \texttt{VistaDeTraducciones} se sustituyen en \texttt{IIdentificacion}, porque las dos recogen una elección. \texttt{EscrituraAMano} y \texttt{EscrituraEnCelular} se sustituyen en \texttt{IRecuperacion}. Ubicar partículas y ordenar la frase también realizan \texttt{IIdentificacion}: la sesión solo recibe la elección, así que no distingue cómo se presentó. \texttt{ProduccionDePatron} realiza \texttt{IProduccion}. \texttt{ProduccionLibre} no realiza \texttt{IEvaluacion} ni sustituye a las otras interfaces, porque puede subir varias piezas y deja incorporar la frase al grupo. El efecto de un vocabulario tampoco sustituye al de un kanji practicado solo, porque la palabra sube también el kanji que trae. \texttt{Kana}, \texttt{Kanji}, \texttt{Vocabulario} y \texttt{Gramatica} sí se sustituyen en \texttt{Pieza}: ninguna cambia cómo se recorre la selección ni cómo se registra su avance.
+  \item[Segregación de interfaces.] \texttt{IIdentificacion} expone elegir en un conjunto, \texttt{IRecuperacion} expone escribir de memoria, \texttt{IProduccion} expone producir con un patrón e \texttt{IEvaluacion} expone la corrección del agente. Esa última la usa la sesión cuando hay conexión. Sin conexión, la producción libre se queda en su propio juicio y no implementa esa interfaz. Antes una sola interfaz juntaba elegir, escribir y evaluar, y el ejercicio de una pieza implementaba la evaluación sin usarla. Del avance, \texttt{IConsultaAvance} expone solo la lectura, y \texttt{IRegistroAvance} la extiende con el registro. La regla y los filtros reciben la primera, así que pueden consultar el progreso pero no escribirlo.
+  \item[Inversión de dependencias.] \texttt{SesionDePractica} recibe \texttt{IAlmacen} e \texttt{IRegistroAvance}. Las flechas punteadas salen de la sesión hacia esas interfaces, de modo que no construye el almacén local ni el componente Avance. La regla, a su vez, depende de \texttt{IConsultaAvance} y no de la clase que guarda el progreso. Antes el ViewModel creaba esas clases concretas y la sesión no se podía probar sin ellas.
+\end{description}
+
+\section{Fase 5. Patrones de diseño}
+
+Los seis patrones resuelven situaciones que Práctica ya tiene. Hay que abrir el ejercicio sin construirlo dentro de la sesión, practicar una frase sin alterar la que está guardada, recorrer igual un grupo, varios grupos o piezas sueltas, traducir la corrección del agente, repartir los puntajes y filtrar la producción libre antes de ese reparto. En cada ficha se nombra la alternativa que se dejó de lado.
+
+\subsection{Factory Method}
+
+\begin{description}
+  \raggedright
+  \item[Problema.] La sesión abre un ejercicio según el tipo de pieza y según se trate de identificar o de interiorizar: distractores, traducciones, escritura a mano, escritura en el celular, producción con un patrón o producción libre. Si \texttt{SesionDePractica} hace el \texttt{new}, cada vista nueva vuelve a modificarla.
+  \item[Solución.] \texttt{FabricaDeEjercicio} declara la creación y la subclase devuelve la vista concreta. Cada interfaz de la figura 3 tiene su propia jerarquía, porque no comparten un mismo producto. Se descartó Abstract Factory: no hay una familia de objetos que deba nacer junta, solo la vista del ejercicio que el aprendiz abrió.
+  \item[Participantes.] Creador: \texttt{FabricaDeEjercicio}. Creador concreto: \texttt{FabricaDeDistractores}. Producto: \texttt{IIdentificacion}. Producto concreto: \texttt{VistaDeDistractores}. Las traducciones, ubicar partículas y ordenar la frase tienen su fábrica concreta y devuelven la misma interfaz. La recuperación, la producción de un patrón y la producción libre siguen el mismo esquema. Esta última no devuelve \texttt{IEvaluacion}.
+  \item[SOLID.] Abierto/cerrado e inversión de dependencias. La sesión recibe la fábrica y no conoce la clase concreta.
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw, align=center, inner sep=3pt, minimum width=32mm},
+  int/.style={draw, dashed, align=center, inner sep=3pt, minimum width=32mm},
+  >={Stealth},
+  node distance=6mm and 12mm
+]
+  \node[cls] (creador) {«creator»\\FabricaDeEjercicio};
+  \node[cls, below=of creador] (concreto) {«concrete creator»\\FabricaDeDistractores};
+  \node[int, right=14mm of creador] (producto) {«product»\\IIdentificacion};
+  \node[cls, below=of producto] (vista) {«concrete product»\\VistaDeDistractores};
+  \draw[-{Triangle[open]}] (concreto) -- (creador);
+  \draw[dashed, -{Triangle[open]}] (vista) -- (producto);
+  \draw[dashed, -{Stealth[open]}] (concreto) -- node[right, font=\scriptsize] {crear} (vista);
+\end{tikzpicture}\\[0.3em]
+{\small Figura 4. Factory Method al abrir los distractores. Las demás vistas siguen el mismo esquema, cada una con su interfaz.}
+\end{center}
+
+\subsection{Prototype}
+
+\begin{description}
+  \raggedright
+  \item[Problema.] Al ordenar una frase, al producir con un patrón o al decidir si una frase nueva entra al grupo, el ejercicio no puede escribir sobre la que está guardada. Si lo hace, el grupo cambia antes de que el aprendiz la incorpore.
+  \item[Solución.] \texttt{Frase} se clona y el ejercicio trabaja sobre la copia. Solo \texttt{incorporarGrupo()} escribe en el grupo. Se descartó Builder: la frase no se arma con datos opcionales; ya está dicha, y el ejercicio parte de ese enunciado.
+  \item[Participantes.] Prototipo: \texttt{Frase}. Cliente: \texttt{SesionDePractica}, que pide la copia. El original permanece en el almacén. Como las piezas no guardan el avance ni cambian, la copia comparte las mismas piezas sin riesgo: basta copiar la lista.
+  \item[SOLID.] Responsabilidad única. Guardar la frase y practicar sobre la copia no comparten razón de cambio.
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw, align=center, inner sep=3pt, minimum width=32mm},
+  ext/.style={draw, dashed, align=center, inner sep=3pt, minimum width=32mm},
+  >={Stealth},
+  node distance=7mm
+]
+  \node[ext] (almacen) {Almacén\\frase original};
+  \node[cls, right=14mm of almacen] (frase) {«prototype»\\Frase};
+  \node[cls, below=of frase] (sesion) {«client»\\SesionDePractica};
+  \node[cls, below=of almacen] (copia) {copia del ejercicio};
+  \draw[dashed, -{Stealth[open]}] (almacen) -- (frase);
+  \draw[dashed, -{Stealth[open]}] (sesion) -- node[right, font=\scriptsize] {clonar} (frase);
+  \draw[dashed, -{Stealth[open]}] (frase) -- (copia);
+\end{tikzpicture}\\[0.3em]
+{\small Figura 5. Prototype. El ejercicio trabaja sobre la copia.}
+\end{center}
+
+\subsection{Composite}
+
+\begin{description}
+  \raggedright
+  \item[Problema.] La práctica arranca de un grupo, de varios grupos juntados o de piezas sueltas. Si la sesión distingue esos tres casos, cada forma nueva de elegir qué estudiar la modifica.
+  \item[Solución.] \texttt{Grupo} y \texttt{Pieza} responden igual a qué piezas entran en la práctica. Juntar grupos es un grupo que contiene grupos, y las piezas sueltas son hojas. Se descartó Decorator: no se añade comportamiento a una pieza, se recorre una selección como si fuera una sola.
+  \item[Participantes.] Componente: \texttt{Seleccion}. Compuesto: \texttt{Grupo}. Hoja: \texttt{Pieza}. Cliente: \texttt{SesionDePractica}.
+  \item[SOLID.] Abierto/cerrado. Sustitución de Liskov: un grupo de grupos ocupa el lugar de un grupo de piezas.
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw, align=center, inner sep=3pt, minimum width=28mm},
+  int/.style={draw, dashed, align=center, inner sep=3pt, minimum width=28mm},
+  >={Stealth},
+  node distance=8mm and 10mm
+]
+  \node[int] (sel) {«component»\\Seleccion};
+  \node[cls, below left=10mm and 4mm of sel] (grupo) {«composite»\\Grupo};
+  \node[cls, below right=10mm and 4mm of sel] (pieza) {«leaf»\\Pieza};
+  \node[cls, left=16mm of sel] (sesion) {«client»\\SesionDePractica};
+  \draw[dashed, -{Triangle[open]}] (grupo.north) -- (sel.south west);
+  \draw[dashed, -{Triangle[open]}] (pieza.north) -- (sel.south east);
+  \draw[dashed, -{Stealth[open]}] (grupo.south) -- ++(0,-4mm) -| node[pos=0.35, below, font=\scriptsize] {contiene} (sel.south);
+  \draw[dashed, -{Stealth[open]}] (sesion) -- (sel);
+\end{tikzpicture}\\[0.3em]
+{\small Figura 6. Composite de la selección. Un grupo puede contener otros grupos.}
+\end{center}
+
+\subsection{Adapter}
+
+\begin{description}
+  \raggedright
+  \item[Problema.] Con conexión, el proveedor devuelve la corrección en su propio formato. La sesión necesita un resultado que la regla pueda leer: qué piezas aparecen, si la forma es correcta y si el uso cabe en el contexto. El avance del aprendiz no sale del teléfono.
+  \item[Solución.] \texttt{AdaptadorDelAgente} realiza \texttt{IEvaluacion} y envuelve esa respuesta. El contraste con el avance se hace después, en el teléfono. La pieza no lleva el progreso, así que el adaptador ni siquiera lo tiene a mano. Sin conexión, \texttt{ProduccionLibre} no usa esa interfaz y se queda en el juicio del aprendiz. Se descartó Facade: no hay varias clases de un subsistema que ocultar, sino un resultado cuyo formato no coincide con el de la regla.
+  \item[Participantes.] Destino: \texttt{IEvaluacion}. Adaptador: \texttt{AdaptadorDelAgente}. Adaptado: la respuesta del proveedor. Cliente: \texttt{SesionDePractica}.
+  \item[SOLID.] Inversión de dependencias y segregación de interfaces. Evaluar queda fuera de las vistas, y la producción libre no realiza \texttt{IEvaluacion}.
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw, align=center, inner sep=3pt, minimum width=34mm},
+  int/.style={draw, dashed, align=center, inner sep=3pt, minimum width=32mm},
+  >={Stealth},
+  node distance=7mm and 8mm
+]
+  \node[int] (destino) {«target»\\IEvaluacion};
+  \node[cls, below=of destino] (agente) {«adapter»\\AdaptadorDelAgente};
+  \node[cls, below=of agente] (proveedor) {«adaptee»\\respuesta del proveedor};
+  \node[cls, left=12mm of destino] (sesion) {«client»\\SesionDePractica};
+  \draw[dashed, -{Triangle[open]}] (agente) -- (destino);
+  \draw[dashed, -{Stealth[open]}] (agente) -- (proveedor);
+  \draw[dashed, -{Stealth[open]}] (sesion) -- (destino);
+\end{tikzpicture}\\[0.3em]
+{\small Figura 7. Adapter de la respuesta del proveedor hacia \texttt{IEvaluacion}.}
+\end{center}
+
+\subsection{Strategy}
+
+\begin{description}
+  \raggedright
+  \item[Problema.] El reparto no es el mismo en todos los ejercicios. Un kanji practicado mueve solo ese kanji. Un vocabulario mueve la palabra y el kanji que trae. Una frase de gramática reparte el puntaje entre las piezas que usa. En la producción libre, la interiorización queda en las piezas usadas bien en ese contexto, y la identificación en las que tienen la forma correcta fuera de él. La sesión ya dice si el puntaje es de identificación o de uso, así que un condicional dentro de \texttt{ReglaDeEfecto} cambiaría con cada reparto nuevo.
+  \item[Solución.] \texttt{ReglaDeEfecto} delega en \texttt{PoliticaDePuntaje}. La política queda elegida al abrir el ejercicio. Cada política devuelve las decisiones ---qué pieza sube y qué puntaje---, y la sesión las entrega a Avance. Se descartó State: no cambia porque la sesión avance de etapa.
+  \item[Participantes.] Contexto: \texttt{ReglaDeEfecto}. Estrategia: \texttt{PoliticaDePuntaje}. Estrategias concretas: \texttt{EfectoDeKanji}, \texttt{EfectoDeVocabulario}, \texttt{EfectoDeFrase} y \texttt{EfectoDeContexto}.
+  \item[SOLID.] Abierto/cerrado y responsabilidad única. Un reparto nuevo es una clase nueva y no reabre la sesión.
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw, align=center, inner sep=2pt, minimum width=32mm, font=\tiny},
+  int/.style={draw, dashed, align=center, inner sep=2pt, minimum width=32mm},
+  >={Stealth},
+  node distance=6mm and 2mm
+]
+  \node[cls, font=\scriptsize, minimum width=32mm] (regla) {«context»\\ReglaDeEfecto};
+  \node[int, font=\scriptsize, minimum width=148mm, below=of regla] (politica) {«strategy»\\PoliticaDePuntaje};
+  \node[cls, below=9mm of politica, xshift=-54mm] (kanji) {«concrete strategy»\\EfectoDeKanji};
+  \node[cls, below=9mm of politica, xshift=-18mm] (vocab) {«concrete strategy»\\EfectoDeVocabulario};
+  \node[cls, below=9mm of politica, xshift=18mm] (frase) {«concrete strategy»\\EfectoDeFrase};
+  \node[cls, below=9mm of politica, xshift=54mm] (ctx) {«concrete strategy»\\EfectoDeContexto};
+  \draw[dashed, -{Stealth[open]}] (regla) -- (politica);
+  \draw[dashed, -{Triangle[open]}] (kanji.north) -- (kanji.north |- politica.south);
+  \draw[dashed, -{Triangle[open]}] (vocab.north) -- (vocab.north |- politica.south);
+  \draw[dashed, -{Triangle[open]}] (frase.north) -- (frase.north |- politica.south);
+  \draw[dashed, -{Triangle[open]}] (ctx.north) -- (ctx.north |- politica.south);
+\end{tikzpicture}\\[0.3em]
+{\small Figura 8. Strategy del reparto. La sesión ya eligió si el puntaje es de identificación o de uso.}
+\end{center}
+
+\subsection{Chain of Responsibility}
+
+\begin{description}
+  \raggedright
+  \item[Problema.] Antes de aplicar \texttt{EfectoDeContexto}, la producción libre aparta el hiragana y el katakana ya interiorizados, según el progreso que consulta en \texttt{IConsultaAvance}, y separa la forma correcta del uso en el contexto pedido. Eso vale tanto si el resultado viene del agente como si viene del juicio del aprendiz. Si esos filtros viven en la política, un filtro nuevo la modifica.
+  \item[Solución.] Cada filtro decide sobre la pieza o la pasa al siguiente. Se descartó Template Method: la cantidad y el orden de los filtros cambian, y no son pasos fijos de una misma receta.
+  \item[Participantes.] Manejador: \texttt{FiltroDePuntaje}. Manejadores concretos: \texttt{FiltroDeKanaDominado}, \texttt{FiltroDeForma} y \texttt{FiltroDeContexto}. Cliente: \texttt{ReglaDeEfecto}, que arma la cadena y entrega lo que queda a \texttt{EfectoDeContexto}.
+  \item[SOLID.] Abierto/cerrado y responsabilidad única. Cada filtro tiene una sola decisión.
+\end{description}
+
+\begin{center}
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw, align=center, inner sep=2pt, minimum width=32mm},
+  int/.style={draw, dashed, align=center, inner sep=2pt, minimum width=28mm},
+  >={Stealth},
+  node distance=4mm
+]
+  \node[cls] (regla) {«client»\\ReglaDeEfecto};
+  \node[cls, below=of regla] (kana) {«concrete handler»\\FiltroDeKanaDominado};
+  \node[cls, below=of kana] (forma) {«concrete handler»\\FiltroDeForma};
+  \node[cls, below=of forma] (contexto) {«concrete handler»\\FiltroDeContexto};
+  \node[int, right=14mm of forma] (base) {«handler»\\FiltroDePuntaje};
+  \draw[dashed, -{Stealth[open]}] (regla) -- node[left, font=\scriptsize] {pasa} (kana);
+  \draw[dashed, -{Stealth[open]}] (kana) -- node[left, font=\scriptsize] {pasa} (forma);
+  \draw[dashed, -{Stealth[open]}] (forma) -- node[left, font=\scriptsize] {pasa} (contexto);
+  \draw[dashed, -{Triangle[open]}] (forma.east) -- (base.west);
+\end{tikzpicture}\\[0.15em]
+{\small Figura 9. Filtros de la producción libre, antes de \texttt{EfectoDeContexto}. Los tres realizan \texttt{FiltroDePuntaje}.}
+\end{center}
+
+\section{Fase 6. Código}
+
+Práctica está escrita en Kotlin, que es el lenguaje del celular. Los paquetes \texttt{vista}, \texttt{viewmodel} y \texttt{modelo} repiten el MVVM de la fase 3. El almacén, el registro de avance y el proveedor quedan en \texttt{infraestructura}, en memoria: cada vista recibe la respuesta que el aprendiz ya dio.
+
+\texttt{SesionDePractica} abre el ejercicio con la fábrica, trabaja la frase sobre una copia, le pide las decisiones a \texttt{ReglaDeEfecto} y las entrega a \texttt{IRegistroAvance}, que guarda el progreso por el identificador de la pieza. Con conexión, \texttt{AdaptadorDelAgente} traduce la respuesta del proveedor y la solicitud solo lleva el texto. Sin conexión, la producción libre usa su juicio y la misma cadena de filtros. Las pruebas están en \texttt{PracticaTest.kt} y corren con \texttt{./gradlew test}. Una de ellas define \texttt{EfectoDeLectura} y la registra al construir la regla: la regla devuelve sus decisiones, y la clase \texttt{ReglaDeEfecto} no se modifica.
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}p{3.3cm}p{5.4cm}p{5.5cm}@{}}
+\hline
+Patrón & Archivo & Clases \\
+\hline
+Factory Method & \texttt{FabricaDeEjercicio.kt} & \texttt{FabricaDeEjercicio}, \texttt{FabricaDeDistractores} \\
+Prototype & \texttt{Frase.kt} & \texttt{Frase} \\
+Composite & \texttt{Seleccion.kt}, \texttt{Pieza.kt} & \texttt{Seleccion}, \texttt{Grupo}, \texttt{Pieza} \\
+Adapter & \texttt{AdaptadorDelAgente.kt} & \texttt{AdaptadorDelAgente}, \texttt{IEvaluacion} \\
+Strategy & \texttt{PoliticaDePuntaje.kt} & \texttt{ReglaDeEfecto}, \texttt{PoliticaDePuntaje}, \texttt{EfectoDeKanji}, \texttt{EfectoDeVocabulario}, \texttt{EfectoDeFrase}, \texttt{EfectoDeContexto} \\
+Chain of\\ Responsibility & \texttt{FiltroDePuntaje.kt} & \texttt{FiltroDePuntaje}, \texttt{FiltroDeKanaDominado}, \texttt{FiltroDeForma}, \texttt{FiltroDeContexto} \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Fase 7. Prueba de evolución}
+
+Tres cambios que el dominio puede pedir. En cada uno se dice qué clase aparece, qué se modifica y qué sigue igual.
+
+\begin{description}
+  \raggedright
+  \item[Otro proveedor de IA.] La mascota pasa a corregir con un proveedor cuyo formato no es el de ahora. Aparece un adaptador nuevo que realiza \texttt{IEvaluacion} y traduce esa respuesta al resultado que la regla ya lee. Al armar la sesión se le entrega ese adaptador. \texttt{SesionDePractica}, \texttt{ProduccionLibre}, \texttt{ReglaDeEfecto} y la cadena de filtros no se tocan. Sin conexión, el juicio del aprendiz sigue igual, porque ese camino no pasa por el proveedor.
+  \item[Un compuesto.] Una palabra compuesta debe subir su puntaje, el de las palabras que la forman y el kanji de cada una. Aparece \texttt{EfectoDeCompuesto}, otra \texttt{PoliticaDePuntaje}. Se registra al construir la regla, como ya permite el mapa extra de \texttt{porDefecto}. \texttt{ReglaDeEfecto}, \texttt{EfectoDeVocabulario}, \texttt{EfectoDeKanji}, \texttt{EfectoDeFrase} y \texttt{EfectoDeContexto} no se modifican. La sesión tampoco: sigue pidiendo el puntaje y no elige el reparto.
+  \item[El kanji ya interiorizado.] En la producción libre, un kanji que el aprendiz ya usa bien sale del foco, igual que el hiragana y el katakana. Aparece \texttt{FiltroDeKanjiDominado}. Los filtros que ya existen y \texttt{EfectoDeContexto} no cambian: el nuevo decide o pasa la pieza. Quien arma la cadena lo inserta antes de \texttt{FiltroDeForma}. Si esa cadena entra por el constructor de \texttt{ReglaDeEfecto}, la clase no se modifica. \texttt{porDefecto}, que hoy deja armados los tres filtros, es el único método que pasa a nombrar el cuarto.
+\end{description}
+
+\section{Trazabilidad}
+
+Cada requisito de la fase 1 queda unido al componente que lo atiende, a las clases, al patrón y al principio. Donde el requisito vive fuera de Práctica, no se le asigna un patrón.
+
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{1.7cm}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}p{2.7cm}@{}}
+\hline
+Requisito & Componente & Clases & Patrón & SOLID \\
+\hline
+RF1. Ruta sugerida & Grupos & \texttt{Grupo}, \texttt{Seleccion} & Composite & Responsabilidad única \\
+RF2. Incorporar frases & Grupos, Práctica & \texttt{Frase}, \texttt{Grupo} & Prototype & Responsabilidad única \\
+RF3. Dos puntajes por pieza & Práctica, Avance & \texttt{Pieza}, \texttt{Progreso}, \texttt{ReglaDeEfecto}, \texttt{IRegistroAvance} & Strategy & Responsabilidad única, inversión \\
+RF4. Practicar una pieza & Práctica & \texttt{SesionDePractica}, \texttt{FabricaDeEjercicio}, \texttt{IIdentificacion}, \texttt{IRecuperacion} & Factory Method & Abierto/cerrado, Liskov \\
+RF5. Practicar una frase & Práctica & \texttt{Frase}, \texttt{EfectoDeFrase} & Strategy, Prototype & Abierto/cerrado \\
+RF6. Ver el avance & Avance & \texttt{IRegistroAvance}, \texttt{IConsultaAvance} & --- & Inversión, segregación \\
+RF7. Lecturas & Lecturas, Detalle & --- & --- & Responsabilidad única \\
+RF8. Estudiar sin conexión & Almacén, Práctica & \texttt{IAlmacen}, \texttt{ProduccionLibre} & --- & Segregación, inversión \\
+RF9. Ejercicios de la mascota & Mascota, Práctica & \texttt{AdaptadorDelAgente}, \texttt{IEvaluacion}, \texttt{FiltroDePuntaje} & Adapter, cadena & Inversión, segregación, abierto/cerrado \\
+RF10. Anuncios o pago & Módulo mascota & --- & --- & Responsabilidad única \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Preguntas de reflexión}
+
+\begin{enumerate}
+  \raggedright
+  \item ¿Qué patrón resultó más natural y cuál fue el más difícil de justificar? El más natural fue Strategy. Los cuatro repartos ya estaban en el dominio: el kanji solo, el vocabulario con su kanji, la frase y el contexto de la producción libre. La regla delega en la política que corresponde al abrir el ejercicio. El más difícil fue Prototype. La copia existe para que ordenar una frase, o decidir si entra al grupo, deje intacta la que está guardada, y solo \texttt{incorporarGrupo} escribe en el grupo. El objeto es pequeño, y como las piezas ya no guardan avance la copia de la lista basta, así que la distancia con una lista temporal es corta. Se mantuvo porque el original sigue en el almacén aunque el ejercicio lo reordene.
+  \item ¿En qué se parecen Strategy y State? Los dos esconden un comportamiento detrás de una interfaz, y el contexto deja de llenarse de condicionales. En Strategy la política se elige al abrir y permanece: \texttt{EfectoDeKanji}, \texttt{EfectoDeVocabulario}, \texttt{EfectoDeFrase} o \texttt{EfectoDeContexto}. State correspondería a un objeto que cambia de comportamiento porque pasó de etapa, por ejemplo de identificar a interiorizar dentro de la misma práctica. En Práctica esa transición no ocurre. El ejercicio ya viene elegido y el reparto no se reemplaza porque la sesión avance.
+  \item ¿En qué escala trabajan el estilo orientado a eventos y Observer? Observer trabaja dentro de un mismo proceso: un objeto avisa a otros que comparten memoria. El estilo orientado a eventos trabaja entre partes desplegadas por separado, y el aviso viaja por un canal común. En Musubi Japan el celular es un monolito modular y el único servicio aparte es la mascota. No hay un canal de eventos entre componentes. Si la pantalla de avance escuchara el puntaje de la sesión, esa sería la escala de Observer. Partir grupos, práctica y avance en servicios sería la escala de los eventos, y la fase 2 la dejó de lado porque esas funciones tienen que responder sin red.
+  \item ¿Qué patrón se eliminaría en un sistema mucho más pequeño, y qué costo tiene uno innecesario? Con un solo ejercicio y un solo grupo, el primero en salir sería Factory Method. La sesión podría construir esa única vista. Dejar el patrón sin una variedad real obliga a cruzar una fábrica antes de ver el ejercicio, y aparece una clase más por cada vista. Aquí se queda porque identificar, recuperar, producir con un patrón y producir libre ya son vistas distintas, y una nueva no modifica \texttt{SesionDePractica}.
+  \item ¿Qué partes se mantendrían al pasar el monolito a microservicios, o al revés? Se mantiene el borde que ya está aislado. \texttt{IEvaluacion} y el adaptador siguen traduciendo al proveedor, y la sesión no conoce el formato. La regla, las políticas y la cadena siguen juntas dentro de Práctica, porque el puntaje se calcula en el teléfono y el avance no sale en la solicitud. \texttt{IAlmacen} e \texttt{IRegistroAvance} permiten cambiar la implementación sin tocar la sesión. En ese traslado seguirían en el celular, en memoria, para responder sin red. El camino de vuelta, reunir un servicio remoto de práctica con el teléfono, usa otra vez esas interfaces con las clases de \texttt{infraestructura} que ya existen.
+\end{enumerate}
+
+\end{document}

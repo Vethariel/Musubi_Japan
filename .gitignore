@@ -42,9 +42,6 @@ obj/
 # Enunciado del laboratorio: se queda en local
 /Laboratorio 3 (1).pdf
 
-# Fuentes LaTeX: se quedan en local
-/latex/
-
 # PDFs. El ?nico que entra al repositorio es el informe compilado.
 *.pdf
 !/docs/informe.pdf
