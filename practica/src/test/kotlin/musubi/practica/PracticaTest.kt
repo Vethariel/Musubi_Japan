@@ -46,6 +46,7 @@ import musubi.practica.vista.VistaDeTraducciones
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotSame
@@ -173,6 +174,32 @@ class PracticaTest {
         assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(manzana))
         assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(particula))
         assertFalse(frase.incorporada)
+    }
+
+    @Test
+    fun laGramaticaPracticaLaFraseMenosDominada() {
+        val particula = objetoDirecto()
+        val manzana = Vocabulario("りんご")
+        val agua = Vocabulario("水")
+        avance = RegistroEnMemoria(mapOf(manzana to Progreso(identificacion = 3, uso = 3)))
+        val conocida = Frase("りんごを", mutableListOf(manzana, particula))
+        val nueva = Frase("水を", mutableListOf(agua, particula))
+        val sesion = sesion(TipoDePieza.GRAMATICA to Puntaje.USO to FabricaDePatron("水を"))
+        sesion.abrirSeleccion(Sesion(Grupo(listOf(particula), listOf(conocida, nueva)), Configuracion(grados = usar)))
+        sesion.siguiente()
+        assertEquals("水を", sesion.frase!!.texto)
+    }
+
+    @Test
+    fun registrarSinUnEjercicioAbiertoNoSeAdmite() {
+        val kanji = Kanji("食")
+        val sesion = sesion(TipoDePieza.KANJI to Puntaje.IDENTIFICACION to FabricaDeDistractores(listOf("comida"), "comida", "comida"))
+        sesion.abrirSeleccion(Sesion(Grupo(listOf(kanji, Kanji("水"))), Configuracion(grados = identificar)))
+        assertFailsWith<IllegalStateException> { sesion.registrarPuntaje() }
+        sesion.siguiente()
+        sesion.registrarPuntaje()
+        assertFailsWith<IllegalStateException> { sesion.registrarPuntaje() }
+        assertEquals(Progreso(identificacion = 1), avance.progreso(kanji))
     }
 
     @Test

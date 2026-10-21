@@ -42,9 +42,12 @@ class SesionDePractica(
     }
 
     fun registrarPuntaje() {
+        val abierta = vista ?: error("No hay un ejercicio abierto: llama a siguiente() antes de registrar.")
         val item = plan[actual]
-        val decisiones = if (vista!!.recoger()) regla.puntajeRespuesta(item, frase) else emptyList()
+        val decisiones = if (abierta.recoger()) regla.puntajeRespuesta(item, frase) else emptyList()
         avance.registrarPuntaje(decisiones)
+        vista = null
+        frase = null
         actual += 1
     }
 
@@ -56,6 +59,9 @@ class SesionDePractica(
 
     private fun prepararFrase(item: Item): Frase? {
         if (item.pieza !is Gramatica) return null
-        return modelo.seleccion.frases().firstOrNull { item.pieza in it.piezas }?.clonar()
+        return modelo.seleccion.frases()
+            .filter { item.pieza in it.piezas }
+            .minByOrNull { candidata -> candidata.piezas.sumOf { avance.progreso(it).en(item.grado) } }
+            ?.clonar()
     }
 }
