@@ -131,8 +131,8 @@ class PracticaTest {
             FabricaDeEscrituraAMano("たべる", "たべる"),
         )
         sesion.registrarPuntaje()
-        assertEquals(Progreso(uso = 1), avance.progreso(palabra))
-        assertEquals(Progreso(uso = 1), avance.progreso(kanji))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(palabra))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(kanji))
         assertEquals(Progreso(), avance.progreso(otro))
     }
 
@@ -150,8 +150,8 @@ class PracticaTest {
         )
         val copia = sesion.prepararFrase(frase)
         sesion.registrarPuntaje(copia)
-        assertEquals(Progreso(uso = 1), avance.progreso(manzana))
-        assertEquals(Progreso(uso = 1), avance.progreso(particula))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(manzana))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(particula))
         assertFalse(frase.incorporada)
     }
 
@@ -159,15 +159,15 @@ class PracticaTest {
     fun sinConexionLaProduccionLibreUsaElJuicio() {
         val kana = Kana("あ", Silabario.HIRAGANA)
         val bien = Kanji("食")
-        avance = RegistroEnMemoria(mapOf(kana to Progreso(uso = 1)))
+        avance = RegistroEnMemoria(mapOf(kana to Progreso(identificacion = 1, uso = 1)))
         val forma = objetoDirecto()
         val juicio = Correccion(enContexto = listOf(bien, kana), formaCorrecta = listOf(bien, forma, kana))
         val frase = Frase("あ食を", mutableListOf(kana, bien, forma))
         val sesion = sesion()
         sesion.abrirSeleccion(Grupo(listOf(bien)), "kanji", "libre", FabricaDeLibre("あ食を", juicio))
         sesion.registrarPuntaje(frase)
-        assertEquals(Progreso(uso = 1), avance.progreso(kana))
-        assertEquals(Progreso(uso = 1), avance.progreso(bien))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(kana))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(bien))
         assertEquals(Progreso(identificacion = 1), avance.progreso(forma))
     }
 
@@ -238,7 +238,7 @@ class PracticaTest {
         val sesion = sesion()
         sesion.abrirSeleccion(Grupo(listOf(particula)), "gramatica", "interiorizar", FabricaDePatron(particula, "りんごを"))
         sesion.registrarPuntaje(frase)
-        assertEquals(Progreso(uso = 1), avance.progreso(manzana))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(manzana))
     }
 
     @Test
@@ -249,7 +249,16 @@ class PracticaTest {
         val sesion = sesion()
         sesion.abrirSeleccion(Grupo(listOf(palabra)), "vocabulario", "interiorizar", FabricaDeEscrituraAMano("たべる", "たべる"))
         sesion.registrarPuntaje()
-        assertEquals(Progreso(uso = 1), avance.progreso(delCatalogo))
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(delCatalogo))
+    }
+
+    @Test
+    fun usarBienUnaPiezaTambienCuentaComoIdentificarla() {
+        val inicial = Progreso(identificacion = 0, uso = 0)
+        assertEquals(Progreso(identificacion = 1, uso = 1), inicial.subir(Puntaje.USO))
+        val identificaMucho = Progreso(identificacion = 5, uso = 1)
+        assertEquals(Progreso(identificacion = 5, uso = 2), identificaMucho.subir(Puntaje.USO))
+        assertEquals(Progreso(identificacion = 1, uso = 0), Progreso().subir(Puntaje.IDENTIFICACION))
     }
 
     private fun objetoDirecto() = Gramatica("を", listOf(Hueco("sustantivo"), Fijo("を")), Registro.INDIFERENTE)
