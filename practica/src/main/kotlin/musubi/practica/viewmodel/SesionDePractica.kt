@@ -50,15 +50,17 @@ class SesionDePractica(
     }
 
     fun registrarPuntaje(frase: Frase? = null) {
-        if (modelo.ejercicio == "libre") {
-            val libre = vista as ProduccionLibre
-            val texto = libre.producir()
-            val correccion = correccionLibre(texto, frase, libre)
-            regla.puntajeRespuesta(modelo, frase, correccion)
-        } else if (recoger()) {
-            regla.puntajeRespuesta(modelo, frase, null)
+        val decisiones = when {
+            modelo.ejercicio == "libre" -> {
+                val libre = vista as ProduccionLibre
+                val texto = libre.producir()
+                val correccion = correccionLibre(texto, frase, libre)
+                regla.puntajeRespuesta(modelo, frase, correccion, avance)
+            }
+            recoger() -> regla.puntajeRespuesta(modelo, frase, null, avance)
+            else -> emptyList()
         }
-        avance.registrarPuntaje(modelo.seleccion.piezas())
+        avance.registrarPuntaje(decisiones)
     }
 
     private fun correccionLibre(texto: String, frase: Frase?, libre: ProduccionLibre): Correccion {

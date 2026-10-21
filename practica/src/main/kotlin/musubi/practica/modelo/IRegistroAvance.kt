@@ -1,5 +1,5 @@
 package musubi.practica.modelo
 
-interface IRegistroAvance {
-    fun registrarPuntaje(piezas: List<Pieza>)
+interface IRegistroAvance : IConsultaAvance {
+    fun registrarPuntaje(decisiones: List<Decision>)
 }

@@ -4,13 +4,17 @@ class ReglaDeEfecto(
     private val politicas: Map<String, PoliticaDePuntaje>,
     private val cadena: FiltroDePuntaje,
 ) {
-    fun puntajeRespuesta(sesion: Sesion, frase: Frase?, correccion: Correccion?) {
+    fun puntajeRespuesta(
+        sesion: Sesion,
+        frase: Frase?,
+        correccion: Correccion?,
+        avance: IConsultaAvance,
+    ): List<Decision> {
         if (sesion.ejercicio == "libre") {
-            val decisiones = frase?.piezas.orEmpty().map { cadena.filtrar(it, correccion!!) }
-            politicas.getValue("libre").aplicar(sesion, frase, decisiones)
-            return
+            val decisiones = frase?.piezas.orEmpty().map { cadena.filtrar(it, correccion!!, avance) }
+            return politicas.getValue("libre").aplicar(sesion, frase, decisiones)
         }
-        politicas.getValue(sesion.tipo).aplicar(sesion, frase, null)
+        return politicas.getValue(sesion.tipo).aplicar(sesion, frase, null)
     }
 
     companion object {

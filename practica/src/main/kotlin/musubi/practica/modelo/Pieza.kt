@@ -1,18 +1,67 @@
 package musubi.practica.modelo
 
-class Pieza(
+sealed class Pieza(
+    val id: String,
     val nombre: String,
-    val tipo: String,
-    var identificacion: Int = 0,
-    var uso: Int = 0,
-    val kanji: Pieza? = null,
 ) : Seleccion {
     override fun piezas(): List<Pieza> = listOf(this)
 
-    fun subirPuntaje(cual: String) {
-        when (cual) {
-            "identificacion" -> identificacion += 1
-            "uso" -> uso += 1
-        }
-    }
+    override fun equals(other: Any?): Boolean = other is Pieza && other.id == id
+
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun toString(): String = id
+}
+
+enum class Silabario { HIRAGANA, KATAKANA }
+
+class Kana(
+    nombre: String,
+    val silabario: Silabario,
+    id: String = "kana:$nombre",
+) : Pieza(id, nombre)
+
+class Kanji(
+    nombre: String,
+    id: String = "kanji:$nombre",
+) : Pieza(id, nombre)
+
+class Vocabulario(
+    nombre: String,
+    val kanji: List<Kanji> = emptyList(),
+    id: String = "vocabulario:$nombre",
+) : Pieza(id, nombre)
+
+enum class Registro { CORDIAL, INFORMAL, INDIFERENTE }
+
+class Gramatica(
+    nombre: String,
+    val patron: List<Segmento>,
+    val registro: Registro,
+    id: String = "gramatica:$nombre",
+) : Pieza(id, nombre) {
+    fun mostrar(): String = patron.joinToString("") { it.mostrar() }
+
+    fun encaja(texto: String): Boolean =
+        Regex(patron.joinToString("") { it.forma() }).matches(texto)
+}
+
+sealed interface Segmento {
+    fun mostrar(): String
+    fun forma(): String
+}
+
+data class Fijo(val texto: String) : Segmento {
+    override fun mostrar(): String = texto
+    override fun forma(): String = Regex.escape(texto)
+}
+
+data class Hueco(val descripcion: String) : Segmento {
+    override fun mostrar(): String = "[$descripcion]"
+    override fun forma(): String = ".+"
+}
+
+data class Opcional(val segmentos: List<Segmento>) : Segmento {
+    override fun mostrar(): String = "(${segmentos.joinToString("") { it.mostrar() }})"
+    override fun forma(): String = "(?:${segmentos.joinToString("") { it.forma() }})?"
 }

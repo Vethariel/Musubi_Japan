@@ -6,12 +6,22 @@ import musubi.practica.infraestructura.ProveedorDeIA
 import musubi.practica.infraestructura.RegistroEnMemoria
 import musubi.practica.modelo.Correccion
 import musubi.practica.modelo.Decision
+import musubi.practica.modelo.Fijo
 import musubi.practica.modelo.Frase
+import musubi.practica.modelo.Gramatica
 import musubi.practica.modelo.Grupo
-import musubi.practica.modelo.Pieza
+import musubi.practica.modelo.Hueco
+import musubi.practica.modelo.Kana
+import musubi.practica.modelo.Kanji
+import musubi.practica.modelo.Opcional
 import musubi.practica.modelo.PoliticaDePuntaje
+import musubi.practica.modelo.Progreso
+import musubi.practica.modelo.Puntaje
+import musubi.practica.modelo.Registro
 import musubi.practica.modelo.ReglaDeEfecto
 import musubi.practica.modelo.Sesion
+import musubi.practica.modelo.Silabario
+import musubi.practica.modelo.Vocabulario
 import musubi.practica.viewmodel.FabricaDeDistractores
 import musubi.practica.viewmodel.FabricaDeEscrituraAMano
 import musubi.practica.viewmodel.FabricaDeLibre
@@ -27,9 +37,11 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class PracticaTest {
+    private var avance = RegistroEnMemoria()
+
     @Test
     fun laFabricaAbreLosDistractoresSinQueLaSesionConstruyaLaVista() {
-        val kanji = Pieza("食", "kanji")
+        val kanji = Kanji("食")
         val sesion = sesion()
         sesion.abrirSeleccion(
             Grupo(listOf(kanji)),
@@ -40,13 +52,12 @@ class PracticaTest {
         assertIs<VistaDeDistractores>(sesion.vista)
         assertEquals("comida, agua", (sesion.vista as VistaDeDistractores).mostrarEjercicio())
         sesion.registrarPuntaje()
-        assertEquals(1, kanji.identificacion)
-        assertEquals(0, kanji.uso)
+        assertEquals(Progreso(identificacion = 1, uso = 0), avance.progreso(kanji))
     }
 
     @Test
     fun lasTraduccionesSustituyenALosDistractores() {
-        val kanji = Pieza("水", "kanji")
+        val kanji = Kanji("水")
         val sesion = sesion()
         sesion.abrirSeleccion(
             Grupo(listOf(kanji)),
@@ -56,35 +67,36 @@ class PracticaTest {
         )
         assertIs<VistaDeTraducciones>(sesion.vista)
         sesion.registrarPuntaje()
-        assertEquals(0, kanji.identificacion)
+        assertEquals(Progreso(), avance.progreso(kanji))
     }
 
     @Test
     fun unaPoliticaNuevaSubeElPuntajeSinModificarLaRegla() {
         class EfectoDeLectura : PoliticaDePuntaje {
-            override fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?) {
-                sesion.seleccion.piezas().forEach {
-                    it.subirPuntaje("identificacion")
-                    it.subirPuntaje("uso")
+            override fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?): List<Decision> =
+                sesion.seleccion.piezas().flatMap {
+                    listOf(Decision(it, Puntaje.IDENTIFICACION), Decision(it, Puntaje.USO))
                 }
-            }
         }
 
-        val lectura = Pieza("話", "kanji")
+        val lectura = Kanji("話")
         val regla = ReglaDeEfecto.porDefecto(mapOf("lectura" to EfectoDeLectura()))
         val modelo = Sesion(Grupo(listOf(lectura)), "lectura", "identificar")
-        regla.puntajeRespuesta(modelo, null, null)
-        assertEquals(1, lectura.identificacion)
-        assertEquals(1, lectura.uso)
+        val decisiones = regla.puntajeRespuesta(modelo, null, null, avance)
+        assertEquals(
+            listOf(Decision(lectura, Puntaje.IDENTIFICACION), Decision(lectura, Puntaje.USO)),
+            decisiones,
+        )
     }
 
     @Test
     fun laCopiaDeLaFraseNoAlteraLaGuardada() {
-        val piezas = mutableListOf(Pieza("りんご", "vocabulario"), Pieza("を", "gramatica"))
+        val particula = objetoDirecto()
+        val piezas = mutableListOf(Vocabulario("りんご"), particula)
         val original = Frase("りんごを", piezas)
-        val grupo = Grupo(listOf(piezas[1]))
+        val grupo = Grupo(listOf(particula))
         val sesion = sesion()
-        sesion.abrirSeleccion(grupo, "gramatica", "interiorizar", FabricaDePatron("を", "を"))
+        sesion.abrirSeleccion(grupo, "gramatica", "interiorizar", FabricaDePatron(particula, "りんごを"))
         val copia = sesion.prepararFrase(original)
         copia.texto = "otra"
         copia.piezas.reverse()
@@ -98,8 +110,8 @@ class PracticaTest {
 
     @Test
     fun unGrupoDeGruposSeRecorreIgualQueLasPiezasSueltas() {
-        val dia = Pieza("日", "kanji")
-        val libro = Pieza("本", "kanji")
+        val dia = Kanji("日")
+        val libro = Kanji("本")
         val juntados = Grupo(listOf(Grupo(listOf(dia)), Grupo(listOf(libro))))
         val sueltas = Grupo(listOf(dia, libro))
         assertEquals(listOf(dia, libro), juntados.piezas())
@@ -108,9 +120,9 @@ class PracticaTest {
 
     @Test
     fun elVocabularioSubeLaPalabraYSuKanji() {
-        val kanji = Pieza("食", "kanji")
-        val otro = Pieza("水", "kanji")
-        val palabra = Pieza("食べる", "vocabulario", kanji = kanji)
+        val kanji = Kanji("食")
+        val otro = Kanji("水")
+        val palabra = Vocabulario("食べる", listOf(kanji))
         val sesion = sesion()
         sesion.abrirSeleccion(
             Grupo(listOf(palabra)),
@@ -119,52 +131,51 @@ class PracticaTest {
             FabricaDeEscrituraAMano("たべる", "たべる"),
         )
         sesion.registrarPuntaje()
-        assertEquals(1, palabra.uso)
-        assertEquals(1, kanji.uso)
-        assertEquals(0, otro.uso)
-        assertEquals(0, palabra.identificacion)
+        assertEquals(Progreso(uso = 1), avance.progreso(palabra))
+        assertEquals(Progreso(uso = 1), avance.progreso(kanji))
+        assertEquals(Progreso(), avance.progreso(otro))
     }
 
     @Test
     fun laFraseReparteElPuntajeEntreSusPiezas() {
-        val manzana = Pieza("りんご", "vocabulario")
-        val particula = Pieza("を", "gramatica")
+        val manzana = Vocabulario("りんご")
+        val particula = objetoDirecto()
         val frase = Frase("りんごを", mutableListOf(manzana, particula))
         val sesion = sesion()
         sesion.abrirSeleccion(
             Grupo(listOf(particula)),
             "gramatica",
             "interiorizar",
-            FabricaDePatron("を", "りんごを"),
+            FabricaDePatron(particula, "りんごを"),
         )
         val copia = sesion.prepararFrase(frase)
         sesion.registrarPuntaje(copia)
-        assertEquals(1, manzana.uso)
-        assertEquals(1, particula.uso)
+        assertEquals(Progreso(uso = 1), avance.progreso(manzana))
+        assertEquals(Progreso(uso = 1), avance.progreso(particula))
         assertFalse(frase.incorporada)
     }
 
     @Test
     fun sinConexionLaProduccionLibreUsaElJuicio() {
-        val kana = Pieza("あ", "hiragana", uso = 1)
-        val bien = Pieza("食", "kanji")
-        val forma = Pieza("を", "gramatica")
+        val kana = Kana("あ", Silabario.HIRAGANA)
+        val bien = Kanji("食")
+        avance = RegistroEnMemoria(mapOf(kana to Progreso(uso = 1)))
+        val forma = objetoDirecto()
         val juicio = Correccion(enContexto = listOf(bien, kana), formaCorrecta = listOf(bien, forma, kana))
         val frase = Frase("あ食を", mutableListOf(kana, bien, forma))
         val sesion = sesion()
         sesion.abrirSeleccion(Grupo(listOf(bien)), "kanji", "libre", FabricaDeLibre("あ食を", juicio))
         sesion.registrarPuntaje(frase)
-        assertEquals(1, kana.uso)
-        assertEquals(0, kana.identificacion)
-        assertEquals(1, bien.uso)
-        assertEquals(1, forma.identificacion)
-        assertEquals(0, forma.uso)
+        assertEquals(Progreso(uso = 1), avance.progreso(kana))
+        assertEquals(Progreso(uso = 1), avance.progreso(bien))
+        assertEquals(Progreso(identificacion = 1), avance.progreso(forma))
     }
 
     @Test
     fun elAdaptadorTraduceAlProveedorSinEnviarElAvance() {
-        val bien = Pieza("食", "kanji", identificacion = 4, uso = 2)
-        val forma = Pieza("を", "gramatica")
+        val bien = Kanji("食")
+        val forma = objetoDirecto()
+        avance = RegistroEnMemoria(mapOf(bien to Progreso(identificacion = 4, uso = 2)))
         val frase = Frase("食を", mutableListOf(bien, forma))
         val juicioContrario = Correccion(enContexto = emptyList(), formaCorrecta = emptyList())
         val proveedor = ProveedorDeIA {
@@ -182,14 +193,70 @@ class PracticaTest {
         assertEquals(mapOf("texto" to "食を"), adaptador.ultimaSolicitud)
         assertFalse(adaptador.ultimaSolicitud.containsKey("identificacion"))
         assertFalse(adaptador.ultimaSolicitud.containsKey("uso"))
-        assertEquals(3, bien.uso)
-        assertEquals(1, forma.identificacion)
-        assertEquals(4, bien.identificacion)
+        assertEquals(Progreso(identificacion = 4, uso = 3), avance.progreso(bien))
+        assertEquals(Progreso(identificacion = 1), avance.progreso(forma))
     }
+
+    @Test
+    fun laGramaticaEsUnaEstructuraConHuecos() {
+        val condicional = Gramatica(
+            "ば…ほど",
+            listOf(Hueco("verbo"), Fijo("ば"), Hueco("verbo"), Fijo("ほど")),
+            Registro.INDIFERENTE,
+        )
+        assertEquals("[verbo]ば[verbo]ほど", condicional.mostrar())
+        assertTrue(condicional.encaja("食べれば食べるほど"))
+        assertFalse(condicional.encaja("食べるほど食べれば"))
+        assertFalse(condicional.encaja("ばほど"))
+    }
+
+    @Test
+    fun laCausaDeDakaraPuedeQuedarEnLaConversacion() {
+        val informal = Gramatica(
+            "だから",
+            listOf(Opcional(listOf(Hueco("causa"), Fijo("。"))), Fijo("だから"), Hueco("consecuencia")),
+            Registro.INFORMAL,
+        )
+        val cordial = Gramatica(
+            "ですから",
+            listOf(Opcional(listOf(Hueco("causa"), Fijo("。"))), Fijo("ですから"), Hueco("consecuencia")),
+            Registro.CORDIAL,
+        )
+        assertEquals("([causa]。)だから[consecuencia]", informal.mostrar())
+        assertTrue(informal.encaja("雨が降っている。だから行かない"))
+        assertTrue(informal.encaja("だから行かない"))
+        assertFalse(informal.encaja("行かない"))
+        assertTrue(cordial.encaja("雨が降っています。ですから行きません"))
+        assertFalse(informal.encaja("ですから行きません"))
+    }
+
+    @Test
+    fun elAvanceRecibeLasPiezasDeLaFraseAunqueNoEstenEnLaSeleccion() {
+        val manzana = Vocabulario("りんご")
+        val particula = objetoDirecto()
+        val frase = Frase("りんごを", mutableListOf(manzana, particula))
+        val sesion = sesion()
+        sesion.abrirSeleccion(Grupo(listOf(particula)), "gramatica", "interiorizar", FabricaDePatron(particula, "りんごを"))
+        sesion.registrarPuntaje(frase)
+        assertEquals(Progreso(uso = 1), avance.progreso(manzana))
+    }
+
+    @Test
+    fun dosCopiasDelMismoKanjiCompartenElAvance() {
+        val delCatalogo = Kanji("食")
+        val dentroDeLaPalabra = Kanji("食")
+        val palabra = Vocabulario("食べる", listOf(dentroDeLaPalabra))
+        val sesion = sesion()
+        sesion.abrirSeleccion(Grupo(listOf(palabra)), "vocabulario", "interiorizar", FabricaDeEscrituraAMano("たべる", "たべる"))
+        sesion.registrarPuntaje()
+        assertEquals(Progreso(uso = 1), avance.progreso(delCatalogo))
+    }
+
+    private fun objetoDirecto() = Gramatica("を", listOf(Hueco("sustantivo"), Fijo("を")), Registro.INDIFERENTE)
 
     private fun sesion(evaluacion: AdaptadorDelAgente? = null) = SesionDePractica(
         AlmacenEnMemoria(),
-        RegistroEnMemoria(),
+        avance,
         ReglaDeEfecto.porDefecto(),
         evaluacion,
     )

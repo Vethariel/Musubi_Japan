@@ -7,5 +7,5 @@ data class Correccion(
 
 data class Decision(
     val pieza: Pieza,
-    val puntaje: String,
+    val puntaje: Puntaje?,
 )

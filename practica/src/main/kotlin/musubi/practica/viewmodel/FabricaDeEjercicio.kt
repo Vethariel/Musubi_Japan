@@ -1,6 +1,7 @@
 package musubi.practica.viewmodel
 
 import musubi.practica.modelo.Correccion
+import musubi.practica.modelo.Gramatica
 import musubi.practica.vista.EscrituraAMano
 import musubi.practica.vista.EscrituraEnCelular
 import musubi.practica.vista.IIdentificacion
@@ -46,10 +47,10 @@ class FabricaDeEscrituraEnCelular(
 }
 
 class FabricaDePatron(
-    private val patron: String,
+    private val gramatica: Gramatica,
     private val producido: String,
 ) : FabricaDeEjercicio<IProduccion>() {
-    override fun crear(): IProduccion = ProduccionDePatron(patron, producido)
+    override fun crear(): IProduccion = ProduccionDePatron(gramatica, producido)
 }
 
 class FabricaDeLibre(

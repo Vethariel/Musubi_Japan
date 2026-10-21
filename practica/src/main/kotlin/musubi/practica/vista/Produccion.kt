@@ -1,6 +1,7 @@
 package musubi.practica.vista
 
 import musubi.practica.modelo.Correccion
+import musubi.practica.modelo.Gramatica
 
 interface IProduccion {
     fun mostrarEjercicio(): String
@@ -8,11 +9,11 @@ interface IProduccion {
 }
 
 class ProduccionDePatron(
-    val patron: String,
+    val gramatica: Gramatica,
     private val producido: String,
 ) : IProduccion {
-    override fun mostrarEjercicio(): String = patron
-    override fun producirPatron(): Boolean = producido.contains(patron)
+    override fun mostrarEjercicio(): String = gramatica.mostrar()
+    override fun producirPatron(): Boolean = gramatica.encaja(producido)
 }
 
 class ProduccionLibre(

@@ -35,7 +35,7 @@ cd practica
 | --- | --- | --- |
 | Factory Method | `viewmodel/FabricaDeEjercicio.kt` | `FabricaDeEjercicio`, `FabricaDeDistractores` |
 | Prototype | `modelo/Frase.kt` | `Frase` |
-| Composite | `modelo/Seleccion.kt` | `Seleccion`, `Grupo`, `Pieza` |
+| Composite | `modelo/Seleccion.kt`, `modelo/Pieza.kt` | `Seleccion`, `Grupo`, `Pieza` |
 | Adapter | `infraestructura/AdaptadorDelAgente.kt` | `AdaptadorDelAgente`, `IEvaluacion` |
 | Strategy | `modelo/PoliticaDePuntaje.kt` | `ReglaDeEfecto`, `PoliticaDePuntaje`, `EfectoDeKanji`, `EfectoDeVocabulario`, `EfectoDeFrase`, `EfectoDeContexto` |
 | Chain of Responsibility | `modelo/FiltroDePuntaje.kt` | `FiltroDePuntaje`, `FiltroDeKanaDominado`, `FiltroDeForma`, `FiltroDeContexto` |
