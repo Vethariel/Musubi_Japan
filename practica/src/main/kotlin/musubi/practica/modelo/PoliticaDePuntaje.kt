@@ -1,36 +1,25 @@
 package musubi.practica.modelo
 
 interface PoliticaDePuntaje {
-    fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?): List<Decision>
+    fun aplicar(item: Item, frase: Frase?): List<Decision>
 }
 
-fun puntajeDe(sesion: Sesion): Puntaje =
-    if (sesion.ejercicio == "identificar") Puntaje.IDENTIFICACION else Puntaje.USO
+class EfectoDeKana : PoliticaDePuntaje {
+    override fun aplicar(item: Item, frase: Frase?): List<Decision> = listOf(Decision(item.pieza, item.grado))
+}
 
 class EfectoDeKanji : PoliticaDePuntaje {
-    override fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?): List<Decision> {
-        val cual = puntajeDe(sesion)
-        return sesion.seleccion.piezas().filterIsInstance<Kanji>().map { Decision(it, cual) }
-    }
+    override fun aplicar(item: Item, frase: Frase?): List<Decision> = listOf(Decision(item.pieza, item.grado))
 }
 
 class EfectoDeVocabulario : PoliticaDePuntaje {
-    override fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?): List<Decision> {
-        val cual = puntajeDe(sesion)
-        return sesion.seleccion.piezas().filterIsInstance<Vocabulario>().flatMap { palabra ->
-            listOf(Decision(palabra, cual)) + palabra.kanji.map { Decision(it, cual) }
-        }
+    override fun aplicar(item: Item, frase: Frase?): List<Decision> {
+        val kanji = (item.pieza as? Vocabulario)?.kanji.orEmpty()
+        return (listOf(item.pieza) + kanji).map { Decision(it, item.grado) }
     }
 }
 
 class EfectoDeFrase : PoliticaDePuntaje {
-    override fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?): List<Decision> {
-        val cual = puntajeDe(sesion)
-        return frase?.piezas.orEmpty().map { Decision(it, cual) }
-    }
-}
-
-class EfectoDeContexto : PoliticaDePuntaje {
-    override fun aplicar(sesion: Sesion, frase: Frase?, decisiones: List<Decision>?): List<Decision> =
-        decisiones.orEmpty().filter { it.puntaje != null }
+    override fun aplicar(item: Item, frase: Frase?): List<Decision> =
+        (frase?.piezas ?: listOf(item.pieza)).map { Decision(it, item.grado) }
 }

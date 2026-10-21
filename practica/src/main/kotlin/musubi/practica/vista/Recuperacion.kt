@@ -1,8 +1,9 @@
 package musubi.practica.vista
 
-interface IRecuperacion {
-    fun mostrarEjercicio(): String
+interface IRecuperacion : PantallaDePractica {
     fun escribir(): Boolean
+
+    override fun recoger(): Boolean = escribir()
 }
 
 class EscrituraAMano(

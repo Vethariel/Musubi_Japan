@@ -33,11 +33,11 @@ cd practica
 
 | Patrón | Archivo | Clases |
 | --- | --- | --- |
-| Factory Method | `viewmodel/FabricaDeEjercicio.kt` | `FabricaDeEjercicio`, `FabricaDeDistractores` |
+| Factory Method | `viewmodel/FabricaDeEjercicio.kt`, `viewmodel/CatalogoDeEjercicios.kt` | `FabricaDeEjercicio`, `FabricaDeDistractores`, `CatalogoDeEjercicios` |
 | Prototype | `modelo/Frase.kt` | `Frase` |
 | Composite | `modelo/Seleccion.kt`, `modelo/Pieza.kt` | `Seleccion`, `Grupo`, `Pieza` |
 | Adapter | `infraestructura/AdaptadorDelAgente.kt` | `AdaptadorDelAgente`, `IEvaluacion` |
-| Strategy | `modelo/PoliticaDePuntaje.kt` | `ReglaDeEfecto`, `PoliticaDePuntaje`, `EfectoDeKanji`, `EfectoDeVocabulario`, `EfectoDeFrase`, `EfectoDeContexto` |
+| Strategy | `modelo/PoliticaDePuntaje.kt`, `modelo/OrdenDeItems.kt` | `ReglaDeEfecto`, `PoliticaDePuntaje`, `EfectoDeKana`, `EfectoDeKanji`, `EfectoDeVocabulario`, `EfectoDeFrase`, `OrdenDeItems` |
 | Chain of Responsibility | `modelo/FiltroDePuntaje.kt` | `FiltroDePuntaje`, `FiltroDeKanaDominado`, `FiltroDeForma`, `FiltroDeContexto` |
 
 Las rutas de la tabla cuelgan de `practica/src/main/kotlin/musubi/practica/`. Las pruebas están en `practica/src/test/kotlin/musubi/practica/PracticaTest.kt`.

@@ -1,8 +1,11 @@
 package musubi.practica.modelo
 
+enum class TipoDePieza { KANA, KANJI, VOCABULARIO, GRAMATICA }
+
 sealed class Pieza(
     val id: String,
     val nombre: String,
+    val tipo: TipoDePieza,
 ) : Seleccion {
     override fun piezas(): List<Pieza> = listOf(this)
 
@@ -21,18 +24,18 @@ class Kana(
     nombre: String,
     val silabario: Silabario,
     id: String = "kana:$nombre",
-) : Pieza(id, nombre)
+) : Pieza(id, nombre, TipoDePieza.KANA)
 
 class Kanji(
     nombre: String,
     id: String = "kanji:$nombre",
-) : Pieza(id, nombre)
+) : Pieza(id, nombre, TipoDePieza.KANJI)
 
 class Vocabulario(
     nombre: String,
     val kanji: List<Kanji> = emptyList(),
     id: String = "vocabulario:$nombre",
-) : Pieza(id, nombre)
+) : Pieza(id, nombre, TipoDePieza.VOCABULARIO)
 
 enum class Registro { CORDIAL, INFORMAL, INDIFERENTE }
 
@@ -41,7 +44,7 @@ class Gramatica(
     val patron: List<Segmento>,
     val registro: Registro,
     id: String = "gramatica:$nombre",
-) : Pieza(id, nombre) {
+) : Pieza(id, nombre, TipoDePieza.GRAMATICA) {
     fun mostrar(): String = patron.joinToString("") { it.mostrar() }
 
     fun encaja(texto: String): Boolean =

@@ -3,9 +3,10 @@ package musubi.practica.vista
 import musubi.practica.modelo.Correccion
 import musubi.practica.modelo.Gramatica
 
-interface IProduccion {
-    fun mostrarEjercicio(): String
+interface IProduccion : PantallaDePractica {
     fun producirPatron(): Boolean
+
+    override fun recoger(): Boolean = producirPatron()
 }
 
 class ProduccionDePatron(

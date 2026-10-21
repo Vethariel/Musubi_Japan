@@ -1,71 +1,61 @@
 package musubi.practica.viewmodel
 
-import musubi.practica.modelo.Correccion
 import musubi.practica.modelo.Frase
+import musubi.practica.modelo.Gramatica
 import musubi.practica.modelo.IAlmacen
 import musubi.practica.modelo.IEvaluacion
 import musubi.practica.modelo.IRegistroAvance
+import musubi.practica.modelo.Item
 import musubi.practica.modelo.ReglaDeEfecto
-import musubi.practica.modelo.Seleccion
 import musubi.practica.modelo.Sesion
-import musubi.practica.vista.IIdentificacion
-import musubi.practica.vista.IProduccion
-import musubi.practica.vista.IRecuperacion
-import musubi.practica.vista.ProduccionLibre
+import musubi.practica.vista.PantallaDePractica
 
 class SesionDePractica(
     private val almacen: IAlmacen,
     private val avance: IRegistroAvance,
     private val regla: ReglaDeEfecto,
+    private val ejercicios: CatalogoDeEjercicios,
     private val evaluacion: IEvaluacion? = null,
 ) {
     lateinit var modelo: Sesion
         private set
-    var vista: Any? = null
+    var plan: List<Item> = emptyList()
         private set
+    var vista: PantallaDePractica? = null
+        private set
+    var frase: Frase? = null
+        private set
+    private var actual = 0
 
-    fun abrirSeleccion(
-        seleccion: Seleccion,
-        tipo: String,
-        ejercicio: String,
-        fabrica: FabricaDeEjercicio<*>,
-    ) {
-        modelo = Sesion(seleccion, tipo, ejercicio)
-        modelo.guardarSeleccion(seleccion)
-        almacen.leerSeleccion(seleccion)
-        vista = fabrica.crear()
+    fun abrirSeleccion(sesion: Sesion) {
+        modelo = sesion
+        almacen.leerSeleccion(sesion.seleccion)
+        plan = sesion.plan(avance).filter { ejercicios.tiene(it) }
+        actual = 0
     }
 
-    fun prepararFrase(frase: Frase): Frase = frase.clonar()
-
-    fun recoger(): Boolean {
-        val actual = vista
-        return when (modelo.ejercicio) {
-            "identificar" -> (actual as IIdentificacion).elegir()
-            "interiorizar" ->
-                if (modelo.tipo == "gramatica") (actual as IProduccion).producirPatron()
-                else (actual as IRecuperacion).escribir()
-            else -> true
-        }
+    fun siguiente(): PantallaDePractica? {
+        val item = plan.getOrNull(actual) ?: return null
+        frase = prepararFrase(item)
+        vista = ejercicios.crear(item)
+        return vista
     }
 
-    fun registrarPuntaje(frase: Frase? = null) {
-        val decisiones = when {
-            modelo.ejercicio == "libre" -> {
-                val libre = vista as ProduccionLibre
-                val texto = libre.producir()
-                val correccion = correccionLibre(texto, frase, libre)
-                regla.puntajeRespuesta(modelo, frase, correccion, avance)
-            }
-            recoger() -> regla.puntajeRespuesta(modelo, frase, null, avance)
-            else -> emptyList()
-        }
+    fun registrarPuntaje() {
+        val item = plan[actual]
+        val decisiones = if (vista!!.recoger()) regla.puntajeRespuesta(item, frase) else emptyList()
         avance.registrarPuntaje(decisiones)
+        actual += 1
     }
 
-    private fun correccionLibre(texto: String, frase: Frase?, libre: ProduccionLibre): Correccion {
-        val agente = evaluacion
-        if (agente == null) return libre.juicio()
-        return agente.corregirTexto(texto, frase?.piezas.orEmpty())
+    fun producirLibre(frase: Frase, fabrica: FabricaDeLibre) {
+        val libre = fabrica.crear()
+        val correccion = evaluacion?.corregirTexto(libre.producir(), frase.piezas) ?: libre.juicio()
+        avance.registrarPuntaje(regla.puntajeLibre(frase, correccion, avance))
+    }
+
+    private fun prepararFrase(item: Item): Frase? {
+        if (item.pieza !is Gramatica) return null
+        return modelo.seleccion.frases().firstOrNull { item.pieza in it.piezas }?.clonar()
     }
 }

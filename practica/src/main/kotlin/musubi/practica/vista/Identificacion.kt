@@ -1,8 +1,9 @@
 package musubi.practica.vista
 
-interface IIdentificacion {
-    fun mostrarEjercicio(): String
+interface IIdentificacion : PantallaDePractica {
     fun elegir(): Boolean
+
+    override fun recoger(): Boolean = elegir()
 }
 
 class VistaDeDistractores(

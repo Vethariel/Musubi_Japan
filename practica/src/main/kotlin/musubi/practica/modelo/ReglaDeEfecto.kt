@@ -1,29 +1,22 @@
 package musubi.practica.modelo
 
 class ReglaDeEfecto(
-    private val politicas: Map<String, PoliticaDePuntaje>,
+    private val politicas: Map<TipoDePieza, PoliticaDePuntaje>,
     private val cadena: FiltroDePuntaje,
 ) {
-    fun puntajeRespuesta(
-        sesion: Sesion,
-        frase: Frase?,
-        correccion: Correccion?,
-        avance: IConsultaAvance,
-    ): List<Decision> {
-        if (sesion.ejercicio == "libre") {
-            val decisiones = frase?.piezas.orEmpty().map { cadena.filtrar(it, correccion!!, avance) }
-            return politicas.getValue("libre").aplicar(sesion, frase, decisiones).distinct()
-        }
-        return politicas.getValue(sesion.tipo).aplicar(sesion, frase, null).distinct()
-    }
+    fun puntajeRespuesta(item: Item, frase: Frase?): List<Decision> =
+        politicas.getValue(item.pieza.tipo).aplicar(item, frase).distinct()
+
+    fun puntajeLibre(frase: Frase, correccion: Correccion, avance: IConsultaAvance): List<Decision> =
+        frase.piezas.map { cadena.filtrar(it, correccion, avance) }.filter { it.puntaje != null }.distinct()
 
     companion object {
-        fun porDefecto(extra: Map<String, PoliticaDePuntaje> = emptyMap()): ReglaDeEfecto {
+        fun porDefecto(extra: Map<TipoDePieza, PoliticaDePuntaje> = emptyMap()): ReglaDeEfecto {
             val politicas = mapOf(
-                "kanji" to EfectoDeKanji(),
-                "vocabulario" to EfectoDeVocabulario(),
-                "gramatica" to EfectoDeFrase(),
-                "libre" to EfectoDeContexto(),
+                TipoDePieza.KANA to EfectoDeKana(),
+                TipoDePieza.KANJI to EfectoDeKanji(),
+                TipoDePieza.VOCABULARIO to EfectoDeVocabulario(),
+                TipoDePieza.GRAMATICA to EfectoDeFrase(),
             ) + extra
             val cadena = FiltroDeKanaDominado(FiltroDeForma(FiltroDeContexto()))
             return ReglaDeEfecto(politicas, cadena)
