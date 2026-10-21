@@ -170,7 +170,7 @@ MVVM reparte Práctica en tres partes, y cada una cambia por su propia razón. L
 \begin{description}
   \raggedright
   \item[Vista.] \texttt{PantallaDePractica} es la interfaz que comparten las vistas: cada una muestra su ejercicio y recoge la respuesta, y todas la entregan a la misma sesión. \texttt{IIdentificacion}, \texttt{IRecuperacion} e \texttt{IProduccion} la extienden. En kana, kanji y vocabulario, la de identificar presenta un conjunto de distractores o un conjunto de traducciones, y la de interiorizar recoge la escritura, a mano o en el celular. En gramática, una pide ubicar partículas o auxiliares, u ordenar la frase, y otra recoge la frase producida con ese patrón. La producción libre recoge el texto y, sin conexión, también el juicio del aprendiz; no es una \texttt{PantallaDePractica}, porque no parte de una sola pieza. Ninguna calcula los puntajes.
-  \item[ViewModel.] \texttt{SesionDePractica} abre la sesión que el aprendiz configuró y recorre su plan, ítem por ítem. Para cada uno pide al catálogo de ejercicios la vista que corresponde al tipo de pieza y al grado; si es gramática, toma de la selección una frase que la use ---la de piezas menos dominadas en ese grado--- y trabaja sobre una copia. Registra el puntaje solo si hay un ejercicio abierto, y cada respuesta una sola vez. Lee en el almacén lo que esa selección necesita. Sin conexión, la frase de gramática y la producción libre quedan en autoevaluación. Con conexión, en la producción libre pide al agente que evalúe el texto; el contraste con el avance del aprendiz se hace en el teléfono, porque al proveedor solo sale la solicitud. Si la frase es nueva, presenta la conversación sobre cómo la conoce y si se incorpora al grupo. Luego pide el resultado al modelo y lo registra en Avance.
+  \item[ViewModel.] \texttt{SesionDePractica} abre la sesión que el aprendiz configuró y recorre su plan, ítem por ítem. Para cada uno pide al catálogo de ejercicios la vista que corresponde al tipo de pieza y al grado; si es gramática, toma de la selección una frase que la use ---la de piezas menos dominadas en ese grado--- y trabaja sobre una copia. Registra el puntaje solo si hay un ejercicio abierto, y cada respuesta una sola vez. Guarda en el almacén la frase que el aprendiz decide incorporar a un grupo. Sin conexión, la frase de gramática y la producción libre quedan en autoevaluación. Con conexión, en la producción libre pide al agente que evalúe el texto, y si el agente no responde ---porque la red se cayó a mitad de la sesión o el proveedor falló--- vuelve al juicio del aprendiz; el contraste con el avance del aprendiz se hace en el teléfono, porque al proveedor solo sale la solicitud. Si la frase es nueva, presenta la conversación sobre cómo la conoce y si se incorpora al grupo. Luego pide el resultado al modelo y lo registra en Avance.
   \item[Modelo.] Reúne \texttt{Sesion}, \texttt{Pieza}, \texttt{Progreso}, \texttt{Frase} y \texttt{ReglaDeEfecto}. La sesión y la frase dicen qué se está practicando, la pieza dice qué se estudia, el progreso cuánto lo domina el aprendiz y la regla decide qué sube.
   \begin{itemize}
     \raggedright
@@ -211,7 +211,7 @@ MVVM reparte Práctica en tres partes, y cada una cambia por su propia razón. L
   \draw[->] ([xshift=-5mm]vm.north) -- node[left, font=\scriptsize, inner sep=1pt] {ejercicio} ([xshift=-5mm]vista.south);
   \draw[->] ([xshift=5mm]vista.south) -- node[right, font=\scriptsize, inner sep=1pt] {respuesta} ([xshift=5mm]vm.north);
   \draw[->] (mascota) -- node[above, font=\scriptsize, inner sep=1pt] {sesión} (vm);
-  \draw[->] (vm.south west) -- node[left, font=\scriptsize, inner sep=1pt] {lee} (almacen.south east);
+  \draw[->] (vm.south west) -- node[left, font=\scriptsize, inner sep=1pt] {guarda} (almacen.south east);
   \draw[->] ([xshift=-4mm]vm.south) -- node[left, font=\scriptsize, inner sep=1pt] {pregunta} ([xshift=-4mm]mod.north);
   \draw[->] ([xshift=4mm]mod.north) -- node[right, font=\scriptsize, inner sep=1pt] {puntaje} ([xshift=4mm]vm.south);
   \draw[->] (sesion.north) -- (regla.south west);
@@ -242,14 +242,14 @@ El diseño de Práctica separa el flujo de la sesión, los ejercicios y la regla
 ]
   \node[uml, minimum width=36mm] (vm) {{\scriptsize SesionDePractica}
     \nodepart{two} plan
-    \nodepart{three} abrirSeleccion()\\ siguiente()\\ registrarPuntaje()\\ producirLibre()};
+    \nodepart{three} abrirSeleccion()\\ siguiente()\\ registrarPuntaje()\\ incorporar()\\ producirLibre()};
   \node[umlint, minimum width=36mm, right=16mm of vm] (pantalla) {{\scriptsize PantallaDePractica}
     \nodepart{two}
     \nodepart{three} mostrarEjercicio()\\ recoger()};
 
   \node[umlint, below left=12mm and 0mm of vm] (alm) {{\scriptsize IAlmacen}
     \nodepart{two}
-    \nodepart{three} leerSeleccion()};
+    \nodepart{three} guardarFrase()};
   \node[umlint, below=12mm of vm] (avance) {{\scriptsize IRegistroAvance}
     \nodepart{two}
     \nodepart{three} registrarPuntaje()};
@@ -384,7 +384,7 @@ Los seis patrones resuelven situaciones que Práctica ya tiene. Hay que abrir el
   \raggedright
   \item[Problema.] Al ordenar una frase, al producir con un patrón o al decidir si una frase nueva entra al grupo, el ejercicio no puede escribir sobre la que está guardada. Si lo hace, el grupo cambia antes de que el aprendiz la incorpore.
   \item[Solución.] \texttt{Frase} se clona y el ejercicio trabaja sobre la copia. Solo \texttt{incorporarGrupo()} escribe en el grupo. Se descartó Builder: la frase no se arma con datos opcionales; ya está dicha, y el ejercicio parte de ese enunciado.
-  \item[Participantes.] Prototipo: \texttt{Frase}. Cliente: \texttt{SesionDePractica}, que pide la copia. El original permanece en el almacén. Como las piezas no guardan el avance ni cambian, la copia comparte las mismas piezas sin riesgo: basta copiar la lista.
+  \item[Participantes.] Prototipo: \texttt{Frase}. Cliente: \texttt{SesionDePractica}, que pide la copia. El original permanece en el almacén, y la copia llega a él solo si el aprendiz la incorpora. Como las piezas no guardan el avance ni cambian, la copia comparte las mismas piezas sin riesgo: basta copiar la lista.
   \item[SOLID.] Responsabilidad única. Guardar la frase y practicar sobre la copia no comparten razón de cambio.
 \end{description}
 
@@ -442,7 +442,7 @@ Los seis patrones resuelven situaciones que Práctica ya tiene. Hay que abrir el
 \begin{description}
   \raggedright
   \item[Problema.] Con conexión, el proveedor devuelve la corrección en su propio formato. La sesión necesita un resultado que la regla pueda leer: qué piezas aparecen, si la forma es correcta y si el uso cabe en el contexto. El avance del aprendiz no sale del teléfono.
-  \item[Solución.] \texttt{AdaptadorDelAgente} realiza \texttt{IEvaluacion} y envuelve esa respuesta. El contraste con el avance se hace después, en el teléfono. La pieza no lleva el progreso, así que el adaptador ni siquiera lo tiene a mano. Sin conexión, \texttt{ProduccionLibre} no usa esa interfaz y se queda en el juicio del aprendiz. Se descartó Facade: no hay varias clases de un subsistema que ocultar, sino un resultado cuyo formato no coincide con el de la regla.
+  \item[Solución.] \texttt{AdaptadorDelAgente} realiza \texttt{IEvaluacion} y envuelve esa respuesta. El contraste con el avance se hace después, en el teléfono. La pieza no lleva el progreso, así que el adaptador ni siquiera lo tiene a mano. Sin conexión, \texttt{ProduccionLibre} no usa esa interfaz y se queda en el juicio del aprendiz. Si hay mascota pero el proveedor no responde, el adaptador devuelve que no pudo evaluar y la sesión usa ese mismo juicio, aunque la red se caiga a mitad de la práctica. Se descartó Facade: no hay varias clases de un subsistema que ocultar, sino un resultado cuyo formato no coincide con el de la regla.
   \item[Participantes.] Destino: \texttt{IEvaluacion}. Adaptador: \texttt{AdaptadorDelAgente}. Adaptado: la respuesta del proveedor. Cliente: \texttt{SesionDePractica}.
   \item[SOLID.] Inversión de dependencias y segregación de interfaces. Evaluar queda fuera de las vistas, y la producción libre no realiza \texttt{IEvaluacion}.
 \end{description}
@@ -579,13 +579,13 @@ Cada requisito de la fase 1 queda unido al componente que lo atiende, a las clas
 Requisito & Componente & Clases & Patrón & SOLID \\
 \hline
 RF1. Ruta sugerida & Grupos & \texttt{Grupo}, \texttt{Seleccion} & Composite & Responsabilidad única \\
-RF2. Incorporar frases & Grupos, Práctica & \texttt{Frase}, \texttt{Grupo} & Prototype & Responsabilidad única \\
+RF2. Incorporar frases & Grupos, Práctica & \texttt{Frase}, \texttt{Grupo}, \texttt{IAlmacen} & Prototype & Responsabilidad única \\
 RF3. Dos puntajes por pieza & Práctica, Avance & \texttt{Pieza}, \texttt{Progreso}, \texttt{ReglaDeEfecto}, \texttt{IRegistroAvance} & Strategy & Responsabilidad única, inversión \\
 RF4. Practicar una pieza & Práctica & \texttt{SesionDePractica}, \texttt{Sesion}, \texttt{CatalogoDeEjercicios}, \texttt{FabricaDeEjercicio}, \texttt{PantallaDePractica} & Factory Method, Strategy & Abierto/cerrado, Liskov \\
 RF5. Practicar una frase & Práctica & \texttt{Frase}, \texttt{EfectoDeFrase} & Strategy, Prototype & Abierto/cerrado \\
 RF6. Ver el avance & Avance & \texttt{IRegistroAvance}, \texttt{IConsultaAvance} & --- & Inversión, segregación \\
 RF7. Lecturas & Lecturas, Detalle & --- & --- & Responsabilidad única \\
-RF8. Estudiar sin conexión & Almacén, Práctica & \texttt{IAlmacen}, \texttt{ProduccionLibre} & --- & Segregación, inversión \\
+RF8. Estudiar sin conexión & Almacén, Práctica & \texttt{IAlmacen}, \texttt{ProduccionLibre}, \texttt{IEvaluacion} & --- & Segregación, inversión \\
 RF9. Ejercicios de la mascota & Mascota, Práctica & \texttt{AdaptadorDelAgente}, \texttt{IEvaluacion}, \texttt{FiltroDePuntaje} & Adapter, cadena & Inversión, segregación, abierto/cerrado \\
 RF10. Anuncios o pago & Módulo mascota & --- & --- & Responsabilidad única \\
 \hline

@@ -10,10 +10,14 @@ class AdaptadorDelAgente(
     var ultimaSolicitud: Map<String, String> = emptyMap()
         private set
 
-    override fun corregirTexto(texto: String, piezas: List<Pieza>): Correccion {
+    override fun corregirTexto(texto: String, piezas: List<Pieza>): Correccion? {
         val solicitud = mapOf("texto" to texto)
         ultimaSolicitud = solicitud
-        val crudo = proveedor.responder(solicitud)
+        val crudo = try {
+            proveedor.responder(solicitud)
+        } catch (e: Exception) {
+            return null
+        }
         val porNombre = piezas.associateBy { it.nombre }
         return Correccion(
             enContexto = crudo["enContexto"].orEmpty().mapNotNull { porNombre[it] },

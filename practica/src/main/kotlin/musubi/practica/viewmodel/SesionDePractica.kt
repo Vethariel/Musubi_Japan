@@ -2,6 +2,7 @@ package musubi.practica.viewmodel
 
 import musubi.practica.modelo.Frase
 import musubi.practica.modelo.Gramatica
+import musubi.practica.modelo.Grupo
 import musubi.practica.modelo.IAlmacen
 import musubi.practica.modelo.IEvaluacion
 import musubi.practica.modelo.IRegistroAvance
@@ -29,7 +30,6 @@ class SesionDePractica(
 
     fun abrirSeleccion(sesion: Sesion) {
         modelo = sesion
-        almacen.leerSeleccion(sesion.seleccion)
         plan = sesion.plan(avance).filter { ejercicios.tiene(it) }
         actual = 0
     }
@@ -49,6 +49,11 @@ class SesionDePractica(
         vista = null
         frase = null
         actual += 1
+    }
+
+    fun incorporar(frase: Frase, grupo: Grupo) {
+        frase.incorporarGrupo(grupo)
+        almacen.guardarFrase(grupo, frase)
     }
 
     fun producirLibre(frase: Frase, fabrica: FabricaDeLibre) {

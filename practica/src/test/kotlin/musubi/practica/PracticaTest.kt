@@ -54,6 +54,7 @@ import kotlin.test.assertTrue
 
 class PracticaTest {
     private var avance = RegistroEnMemoria()
+    private val almacen = AlmacenEnMemoria()
 
     private val identificar = setOf(Puntaje.IDENTIFICACION)
     private val usar = setOf(Puntaje.USO)
@@ -111,11 +112,13 @@ class PracticaTest {
         assertNotSame(original, copia)
         copia.texto = "otra"
         copia.piezas.reverse()
-        copia.incorporarGrupo(grupo)
+        sesion.incorporar(copia, grupo)
         assertEquals("りんごを", original.texto)
         assertEquals("りんご", original.piezas.first().nombre)
+        assertFalse(original.incorporada)
         assertTrue(copia.incorporada)
         assertEquals(listOf(original, copia), grupo.frases())
+        assertEquals(listOf(copia), almacen.frasesGuardadas(grupo))
     }
 
     @Test
@@ -324,6 +327,19 @@ class PracticaTest {
     }
 
     @Test
+    fun siElProveedorNoRespondeVuelveAlJuicioDelAprendiz() {
+        val bien = Kanji("食")
+        val forma = objetoDirecto()
+        val frase = Frase("食を", mutableListOf(bien, forma))
+        val juicio = Correccion(enContexto = listOf(bien), formaCorrecta = listOf(bien, forma))
+        val sinRed = AdaptadorDelAgente(ProveedorDeIA { throw java.io.IOException("sin red") })
+        sesion(evaluacion = sinRed).producirLibre(frase, FabricaDeLibre("食を", juicio))
+        assertEquals(mapOf("texto" to "食を"), sinRed.ultimaSolicitud)
+        assertEquals(Progreso(identificacion = 1, uso = 1), avance.progreso(bien))
+        assertEquals(Progreso(identificacion = 1), avance.progreso(forma))
+    }
+
+    @Test
     fun dosCopiasDelMismoKanjiCompartenElAvance() {
         val delCatalogo = Kanji("食")
         val dentroDeLaPalabra = Kanji("食")
@@ -386,7 +402,7 @@ class PracticaTest {
         vararg ejercicios: Pair<Pair<TipoDePieza, Puntaje>, FabricaDeEjercicio<out PantallaDePractica>>,
         evaluacion: AdaptadorDelAgente? = null,
     ) = SesionDePractica(
-        AlmacenEnMemoria(),
+        almacen,
         avance,
         ReglaDeEfecto.porDefecto(),
         CatalogoDeEjercicios(ejercicios.toMap()),

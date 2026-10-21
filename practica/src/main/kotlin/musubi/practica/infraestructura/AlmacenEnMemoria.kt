@@ -1,9 +1,15 @@
 package musubi.practica.infraestructura
 
+import musubi.practica.modelo.Frase
+import musubi.practica.modelo.Grupo
 import musubi.practica.modelo.IAlmacen
-import musubi.practica.modelo.Pieza
-import musubi.practica.modelo.Seleccion
 
 class AlmacenEnMemoria : IAlmacen {
-    override fun leerSeleccion(seleccion: Seleccion): List<Pieza> = seleccion.piezas()
+    private val guardadas = mutableMapOf<Grupo, MutableList<Frase>>()
+
+    override fun guardarFrase(grupo: Grupo, frase: Frase) {
+        guardadas.getOrPut(grupo) { mutableListOf() }.add(frase)
+    }
+
+    fun frasesGuardadas(grupo: Grupo): List<Frase> = guardadas[grupo].orEmpty()
 }
